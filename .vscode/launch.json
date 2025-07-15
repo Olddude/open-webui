@@ -74,8 +74,7 @@
 			"console": "integratedTerminal",
 			"python": "${workspaceFolder}/.venv/bin/python",
 			"env": {
-				"PYTHONPATH": "${workspaceFolder}/backend",
-				"WEBUI_SECRET_KEY": "${workspaceFolder}/backend/.webui_secret_key"
+				"PYTHONPATH": "${workspaceFolder}/backend"
 			},
 			"envFile": "${workspaceFolder}/.env",
 			"justMyCode": false
