@@ -16,40 +16,7 @@
 			"cwd": "${workspaceFolder}",
 			"program": "${workspaceFolder}/${input:target}",
 			"args": [],
-			"env": {
-				"PATH": "${env:PATH}:${workspaceFolder}/bin",
-				"OLLAMA_BASE_URL": "http://localhost:11434"
-			},
-			"internalConsoleOptions": "openOnSessionStart"
-		},
-		{
-			"type": "debugpy",
-			"request": "launch",
-			"name": "[Debug] Python",
-			"cwd": "${workspaceFolder}",
-			"program": "${workspaceFolder}/${input:target}",
-			"console": "integratedTerminal",
-			"args": [],
-			"env": {
-				"PYTHONPATH": "${workspaceFolder}/backend",
-				"OLLAMA_BASE_URL": "http://localhost:11434"
-			},
-			"envFile": "${workspaceFolder}/.env",
-			"internalConsoleOptions": "openOnSessionStart"
-		},
-		{
-			"type": "node",
-			"request": "launch",
-			"name": "[Debug] Node",
-			"cwd": "${workspaceFolder}",
-			"program": "${workspaceFolder}/${input:target}",
-			"console": "integratedTerminal",
-			"args": [],
-			"env": {
-				"NODE_ENV": "development",
-				"OLLAMA_BASE_URL": "http://localhost:11434"
-			},
-			"envFile": "${workspaceFolder}/.env",
+			"env": {},
 			"internalConsoleOptions": "openOnSessionStart"
 		},
 		{
