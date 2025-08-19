@@ -4,7 +4,10 @@
 	import TaskPlanning from './Messages/TaskPlanning.svelte';
 	import ReasoningDisplay from './Messages/ReasoningDisplay.svelte';
 	import TaskMonitor from './Messages/TaskMonitor.svelte';
-	import { ChevronDown, ChevronRight, Brain, ListTodo, Activity, Settings, Play, RotateCcw } from 'lucide-svelte';
+	import RecipeUploadPanel from './RecipeUploadPanel.svelte';
+	import { ChevronDown, ChevronRight, Brain, ListTodo, Activity, Settings, Play, RotateCcw, ChefHat } from 'lucide-svelte';
+	
+	let showRecipeUpload = false;
 
 	$: showTaskPanel = $agentState.showTaskPanel;
 	$: showReasoningPanel = $agentState.showReasoningPanel;
@@ -13,6 +16,220 @@
 	$: currentPlan = $agentState.currentPlan;
 	$: queuedTasks = $taskQueue.queue;
 	$: runningTasks = $taskQueue.running;
+	
+	function loadRecipeDemoData() {
+		// Load recipe processing demo data
+		const recipeTasks = [
+			{
+				id: 'recipe-task-1',
+				title: 'File Validation',
+				description: 'Validating uploaded Excel files and checking format',
+				status: 'completed' as const,
+				progress: 100,
+				children: [
+					{
+						id: 'recipe-task-1-1',
+						title: 'Check file extensions',
+						description: 'Verify .xlsx/.xls format',
+						status: 'completed' as const,
+						progress: 100,
+						children: [],
+						dependencies: []
+					},
+					{
+						id: 'recipe-task-1-2', 
+						title: 'Verify Excel format',
+						description: 'Parse Excel structure',
+						status: 'completed' as const,
+						progress: 100,
+						children: [],
+						dependencies: []
+					}
+				],
+				dependencies: [],
+				startTime: new Date(Date.now() - 120000),
+				endTime: new Date(Date.now() - 100000)
+			},
+			{
+				id: 'recipe-task-2',
+				title: 'RAG Processing',
+				description: 'Using RAG to enhance and structure recipe data (15/25 recipes)',
+				status: 'executing' as const,
+				progress: 60,
+				children: [],
+				dependencies: ['recipe-task-1'],
+				startTime: new Date(Date.now() - 80000)
+			},
+			{
+				id: 'recipe-task-3',
+				title: 'JSON Generation',
+				description: 'Generating final structured JSON output',
+				status: 'pending' as const,
+				progress: 0,
+				children: [],
+				dependencies: ['recipe-task-2']
+			}
+		];
+
+		const recipeReasoning = [
+			{
+				id: 'recipe-reason-1',
+				type: 'analysis' as const,
+				content: 'Processing 3 Excel files with 25 total recipes. Schema provided specifies required fields: name, ingredients, instructions with optional prep/cook times.',
+				timestamp: new Date(Date.now() - 150000),
+				confidence: 0.95
+			},
+			{
+				id: 'recipe-reason-2',
+				type: 'strategy' as const,
+				content: 'Using RAG to standardize ingredient names and enhance instruction clarity. Processing in chunks of 5 recipes for optimal performance.',
+				timestamp: new Date(Date.now() - 120000),
+				confidence: 0.9,
+				alternatives: ['Batch all at once', 'Individual processing'],
+				selected: true
+			},
+			{
+				id: 'recipe-reason-3',
+				type: 'thinking' as const,
+				content: 'Detected inconsistent ingredient formatting across files. Applying normalization rules and unit conversions.',
+				timestamp: new Date(Date.now() - 60000),
+				confidence: 0.85
+			}
+		];
+
+		const recipeArtifacts = [
+			{
+				id: 'recipe-artifact-1',
+				type: 'document' as const,
+				title: 'Processing Summary',
+				content: `# Recipe Processing Report
+
+## Files Processed
+- recipes_batch_1.xlsx (8 recipes)
+- recipes_batch_2.xlsx (12 recipes) 
+- recipes_batch_3.xlsx (5 recipes)
+
+## Progress Status
+- ✅ File validation completed
+- ⏳ RAG processing: 15/25 recipes (60%)
+- ⏸️ JSON generation pending
+
+## Identified Issues
+- Ingredient units normalized (cups → metric)
+- 3 recipes missing prep time (estimated)
+- Standardized difficulty levels
+
+## Next Steps
+- Complete RAG processing for remaining 10 recipes
+- Apply final schema validation
+- Generate structured JSON output`,
+				version: 1,
+				createdAt: new Date(Date.now() - 90000),
+				modifiedAt: new Date(Date.now() - 30000)
+			},
+			{
+				id: 'recipe-json-output',
+				type: 'code' as const,
+				title: 'recipes_output.json',
+				content: JSON.stringify({
+					metadata: {
+						total_recipes: 25,
+						processed_at: new Date().toISOString(),
+						schema_version: "1.0",
+						processing_time: "2m 15s",
+						success_rate: "96%"
+					},
+					recipes: [
+						{
+							id: "recipe_001",
+							name: "Classic Margherita Pizza",
+							ingredients: [
+								{ name: "pizza dough", amount: "1 lb", unit: "pound" },
+								{ name: "tomato sauce", amount: "1/2 cup", unit: "cup" },
+								{ name: "fresh mozzarella", amount: "8 oz", unit: "ounce" },
+								{ name: "fresh basil", amount: "10 leaves", unit: "pieces" },
+								{ name: "olive oil", amount: "2 tbsp", unit: "tablespoon" }
+							],
+							instructions: "Preheat oven to 475°F. Roll out pizza dough on floured surface. Spread tomato sauce evenly. Add torn mozzarella and drizzle with olive oil. Bake 12-15 minutes until crust is golden. Top with fresh basil before serving.",
+							prep_time: "15 minutes",
+							cook_time: "15 minutes",
+							servings: 4,
+							difficulty: "easy",
+							tags: ["italian", "vegetarian", "pizza"]
+						},
+						{
+							id: "recipe_002", 
+							name: "Chocolate Chip Cookies",
+							ingredients: [
+								{ name: "all-purpose flour", amount: "2 1/4 cups", unit: "cup" },
+								{ name: "butter", amount: "1 cup", unit: "cup" },
+								{ name: "brown sugar", amount: "3/4 cup", unit: "cup" },
+								{ name: "granulated sugar", amount: "1/2 cup", unit: "cup" },
+								{ name: "eggs", amount: "2 large", unit: "pieces" },
+								{ name: "vanilla extract", amount: "1 tsp", unit: "teaspoon" },
+								{ name: "chocolate chips", amount: "2 cups", unit: "cup" }
+							],
+							instructions: "Cream butter and sugars. Beat in eggs and vanilla. Mix in flour. Fold in chocolate chips. Drop rounded tablespoons on baking sheet. Bake at 375°F for 9-11 minutes.",
+							prep_time: "20 minutes",
+							cook_time: "10 minutes",
+							servings: 48,
+							difficulty: "easy",
+							tags: ["dessert", "cookies", "chocolate"]
+						},
+						{
+							id: "recipe_003",
+							name: "Grilled Salmon with Lemon",
+							ingredients: [
+								{ name: "salmon fillets", amount: "4 pieces", unit: "pieces" },
+								{ name: "lemon", amount: "2 large", unit: "pieces" },
+								{ name: "olive oil", amount: "3 tbsp", unit: "tablespoon" },
+								{ name: "garlic", amount: "3 cloves", unit: "pieces" },
+								{ name: "dill", amount: "2 tbsp", unit: "tablespoon" }
+							],
+							instructions: "Marinate salmon in olive oil, lemon juice, garlic and dill for 30 minutes. Preheat grill to medium-high. Grill salmon 6-8 minutes per side until flakes easily.",
+							prep_time: "35 minutes",
+							cook_time: "15 minutes", 
+							servings: 4,
+							difficulty: "medium",
+							tags: ["seafood", "healthy", "grilled"]
+						}
+					]
+				}, null, 2),
+				language: 'json',
+				version: 1,
+				createdAt: new Date(Date.now() - 10000),
+				modifiedAt: new Date(Date.now() - 10000)
+			}
+		];
+
+		agentState.update(state => ({
+			...state,
+			activeTasks: recipeTasks,
+			reasoningChain: recipeReasoning,
+			artifacts: recipeArtifacts,
+			currentPlan: {
+				id: 'recipe-plan',
+				title: 'Process Recipe Collection',
+				description: 'Convert Excel recipe files to structured JSON using RAG enhancement',
+				status: 'executing' as const,
+				progress: 60,
+				children: recipeTasks,
+				dependencies: [],
+				startTime: new Date(Date.now() - 120000)
+			}
+		}));
+	}
+	
+	function handleRecipeUpload(event) {
+		const { files, schema } = event.detail;
+		console.log('Recipe files uploaded:', files);
+		console.log('Schema:', schema);
+		
+		// Start recipe processing demo
+		setTimeout(() => {
+			loadRecipeDemoData();
+		}, 1000);
+	}
 </script>
 
 <div class="agent-panel-container h-full flex flex-col">
@@ -22,6 +239,13 @@
 				Agent Activity
 			</h2>
 			<div class="flex gap-1">
+				<button
+					class="p-1 hover:bg-orange-100 dark:hover:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded transition-colors"
+					title="Process Recipes (Demo)"
+					on:click={() => showRecipeUpload = true}
+				>
+					<ChefHat size={16} />
+				</button>
 				<button
 					class="p-1 hover:bg-green-100 dark:hover:bg-green-900/30 text-green-600 dark:text-green-400 rounded transition-colors"
 					title="Load Demo Data"
@@ -164,6 +388,8 @@
 		</div>
 	</div>
 </div>
+
+<RecipeUploadPanel bind:isVisible={showRecipeUpload} on:upload={handleRecipeUpload} />
 
 <style>
 	.agent-panel-container {
