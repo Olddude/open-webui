@@ -30,4 +30,5 @@ tree . \
     -I .vscode \
     -I __pycache__ \
     -I dist \
-    -I build
+    -I build \
+    -I static
