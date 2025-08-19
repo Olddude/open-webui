@@ -108,6 +108,7 @@
 		"katex": "^0.16.22",
 		"kokoro-js": "^1.1.1",
 		"leaflet": "^1.9.4",
+		"lucide-svelte": "^0.540.0",
 		"marked": "^9.1.0",
 		"mermaid": "^11.6.0",
 		"paneforge": "^0.0.6",

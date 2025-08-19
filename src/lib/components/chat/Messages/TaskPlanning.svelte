@@ -40,86 +40,78 @@
 		}
 	}
 	
-	function renderTask(task: Task, level: number = 0): Task {
-		return task;
-	}
+	// Component props for recursive rendering
+	export let level: number = 0;
 </script>
 
 <div class="task-planning">
 	{#if task}
 		<div class="task-tree">
-			{#function renderTaskNode(t, level)}
-				<div 
-					class="task-node"
-					style="padding-left: {level * 20}px"
-				>
-					<div class="task-header">
-						<button
-							class="task-expand-btn"
-							on:click={() => toggleExpand(t.id)}
-							disabled={!t.children || t.children.length === 0}
-						>
-							{#if t.children && t.children.length > 0}
-								{#if expanded[t.id]}
-									<ChevronDown size={14} />
-								{:else}
-									<ChevronRight size={14} />
-								{/if}
+			<div class="task-node" style="padding-left: {level * 20}px">
+				<div class="task-header">
+					<button
+						class="task-expand-btn"
+						on:click={() => toggleExpand(task.id)}
+						disabled={!task.children || task.children.length === 0}
+					>
+						{#if task.children && task.children.length > 0}
+							{#if expanded[task.id]}
+								<ChevronDown size={14} />
 							{:else}
-								<span class="w-3.5"></span>
+								<ChevronRight size={14} />
 							{/if}
-						</button>
-						
-						<svelte:component 
-							this={getStatusIcon(t.status)} 
-							size={16} 
-							class={getStatusColor(t.status)}
-						/>
-						
-						<div class="task-info flex-1">
-							<div class="task-title">
-								{t.title}
-							</div>
-							{#if t.description}
-								<div class="task-description">
-									{t.description}
-								</div>
-							{/if}
+						{:else}
+							<span class="w-3.5"></span>
+						{/if}
+					</button>
+					
+					<svelte:component 
+						this={getStatusIcon(task.status)} 
+						size={16} 
+						class={getStatusColor(task.status)}
+					/>
+					
+					<div class="task-info flex-1">
+						<div class="task-title">
+							{task.title}
 						</div>
-						
-						{#if t.progress > 0 && t.progress < 100}
-							<div class="task-progress">
-								<div class="progress-text">{t.progress}%</div>
-								<div class="progress-bar">
-									<div 
-										class="progress-fill"
-										style="width: {t.progress}%"
-									></div>
-								</div>
+						{#if task.description}
+							<div class="task-description">
+								{task.description}
 							</div>
 						{/if}
 					</div>
 					
-					{#if t.dependencies && t.dependencies.length > 0}
-						<div class="task-dependencies">
-							<span class="dep-label">Depends on:</span>
-							{#each t.dependencies as dep}
-								<span class="dep-item">{dep}</span>
-							{/each}
-						</div>
-					{/if}
-					
-					{#if expanded[t.id] && t.children && t.children.length > 0}
-						<div class="task-children">
-							{#each t.children as child}
-								{@const dummy = renderTaskNode(child, level + 1)}
-							{/each}
+					{#if task.progress > 0 && task.progress < 100}
+						<div class="task-progress">
+							<div class="progress-text">{task.progress}%</div>
+							<div class="progress-bar">
+								<div 
+									class="progress-fill"
+									style="width: {task.progress}%"
+								></div>
+							</div>
 						</div>
 					{/if}
 				</div>
-			{/function}
-			
-			{@const dummy = renderTaskNode(task, 0)}
+				
+				{#if task.dependencies && task.dependencies.length > 0}
+					<div class="task-dependencies">
+						<span class="dep-label">Depends on:</span>
+						{#each task.dependencies as dep}
+							<span class="dep-item">{dep}</span>
+						{/each}
+					</div>
+				{/if}
+				
+				{#if expanded[task.id] && task.children && task.children.length > 0}
+					<div class="task-children">
+						{#each task.children as child}
+							<svelte:self task={child} level={level + 1} />
+						{/each}
+					</div>
+				{/if}
+			</div>
 		</div>
 	{:else}
 		<div class="empty-state">
