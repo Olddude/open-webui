@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { agentState, togglePanel } from '$lib/stores/agentState';
+	import { agentState, togglePanel, loadDemoData, resetAgentState } from '$lib/stores/agentState';
 	import { taskQueue } from '$lib/stores/taskQueue';
 	import TaskPlanning from './Messages/TaskPlanning.svelte';
 	import ReasoningDisplay from './Messages/ReasoningDisplay.svelte';
 	import TaskMonitor from './Messages/TaskMonitor.svelte';
-	import { ChevronDown, ChevronRight, Brain, ListTodo, Activity, Settings } from 'lucide-svelte';
+	import { ChevronDown, ChevronRight, Brain, ListTodo, Activity, Settings, Play, RotateCcw } from 'lucide-svelte';
 
 	$: showTaskPanel = $agentState.showTaskPanel;
 	$: showReasoningPanel = $agentState.showReasoningPanel;
@@ -21,12 +21,28 @@
 			<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
 				Agent Activity
 			</h2>
-			<button
-				class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-				title="Settings"
-			>
-				<Settings size={18} />
-			</button>
+			<div class="flex gap-1">
+				<button
+					class="p-1 hover:bg-green-100 dark:hover:bg-green-900/30 text-green-600 dark:text-green-400 rounded transition-colors"
+					title="Load Demo Data"
+					on:click={loadDemoData}
+				>
+					<Play size={16} />
+				</button>
+				<button
+					class="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded transition-colors"
+					title="Reset Data"
+					on:click={resetAgentState}
+				>
+					<RotateCcw size={16} />
+				</button>
+				<button
+					class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+					title="Settings"
+				>
+					<Settings size={16} />
+				</button>
+			</div>
 		</div>
 		<div class="flex gap-2 text-xs">
 			<span class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded">

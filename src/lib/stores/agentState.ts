@@ -198,3 +198,156 @@ export const toggleAgenticMode = () => {
 export const resetAgentState = () => {
 	agentState.set(initialState);
 };
+
+export const loadDemoData = () => {
+	const demoTasks: Task[] = [
+		{
+			id: 'task-1',
+			title: 'Analyze User Requirements',
+			description: 'Breaking down the user request into actionable components',
+			status: 'completed',
+			progress: 100,
+			children: [],
+			dependencies: [],
+			startTime: new Date(Date.now() - 30000),
+			endTime: new Date(Date.now() - 20000)
+		},
+		{
+			id: 'task-2', 
+			title: 'Design System Architecture',
+			description: 'Creating a scalable architecture plan',
+			status: 'executing',
+			progress: 75,
+			children: [],
+			dependencies: ['task-1'],
+			startTime: new Date(Date.now() - 20000)
+		},
+		{
+			id: 'task-3',
+			title: 'Implement Core Features', 
+			description: 'Build the main functionality',
+			status: 'pending',
+			progress: 0,
+			children: [],
+			dependencies: ['task-2']
+		}
+	];
+
+	const demoReasoning: ReasoningStep[] = [
+		{
+			id: 'reason-1',
+			type: 'thinking',
+			content: 'The user is asking for a complex system that requires careful planning. I need to break this down into manageable steps.',
+			timestamp: new Date(Date.now() - 60000),
+			confidence: 0.9
+		},
+		{
+			id: 'reason-2',
+			type: 'analysis',
+			content: 'Looking at the requirements, I can identify three main areas: data processing, user interface, and integration layer.',
+			timestamp: new Date(Date.now() - 45000),
+			confidence: 0.85
+		},
+		{
+			id: 'reason-3',
+			type: 'strategy',
+			content: 'I\'ll use an incremental approach, starting with core functionality and building up complexity.',
+			timestamp: new Date(Date.now() - 30000),
+			confidence: 0.8,
+			alternatives: ['Waterfall approach', 'Parallel development'],
+			selected: true
+		}
+	];
+
+	const demoArtifacts: Artifact[] = [
+		{
+			id: 'artifact-1',
+			type: 'code',
+			title: 'main.py',
+			content: `#!/usr/bin/env python3
+"""
+Main application entry point
+"""
+
+import asyncio
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI(title="Demo App")
+
+class Task(BaseModel):
+    id: str
+    title: str
+    status: str
+
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
+
+@app.get("/tasks")
+async def get_tasks():
+    return [
+        Task(id="1", title="Sample Task", status="completed")
+    ]
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)`,
+			language: 'python',
+			version: 1,
+			createdAt: new Date(Date.now() - 120000),
+			modifiedAt: new Date(Date.now() - 120000)
+		},
+		{
+			id: 'artifact-2', 
+			type: 'document',
+			title: 'Architecture Plan',
+			content: `# System Architecture Plan
+
+## Overview
+This document outlines the proposed architecture for the new system.
+
+## Components
+
+### 1. API Layer
+- FastAPI framework
+- RESTful endpoints
+- Authentication middleware
+
+### 2. Business Logic
+- Service layer pattern
+- Domain models
+- Use case implementations
+
+### 3. Data Layer
+- PostgreSQL database
+- SQLAlchemy ORM
+- Migration management
+
+## Deployment Strategy
+- Docker containers
+- Kubernetes orchestration
+- CI/CD pipeline with GitHub Actions`,
+			version: 1,
+			createdAt: new Date(Date.now() - 90000),
+			modifiedAt: new Date(Date.now() - 60000)
+		}
+	];
+
+	agentState.update(state => ({
+		...state,
+		activeTasks: demoTasks,
+		reasoningChain: demoReasoning,
+		artifacts: demoArtifacts,
+		currentPlan: {
+			id: 'plan-demo',
+			title: 'Build Scalable System',
+			description: 'Create a comprehensive solution with proper architecture',
+			status: 'executing',
+			progress: 60,
+			children: demoTasks,
+			dependencies: [],
+			startTime: new Date(Date.now() - 120000)
+		}
+	}));
+};
