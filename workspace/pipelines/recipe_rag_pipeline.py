@@ -1,8 +1,8 @@
 """
 title: Recipe Processing RAG Pipeline
 author: Open WebUI
-description: A comprehensive pipeline for processing recipe Excel files using RAG with schema validation and JSON output generation.
-requirements: pydantic, pandas, openpyxl, jsonschema, python-multipart
+description: A comprehensive pipeline for processing recipe Excel files using OpenAI with schema validation and JSON output generation.
+requirements: pydantic, pandas, openpyxl, jsonschema, python-multipart, openai
 """
 
 from typing import List, Dict, Any, Optional, Generator, Union
@@ -16,6 +16,15 @@ from pydantic import BaseModel
 from jsonschema import validate, ValidationError
 import tempfile
 import uuid
+import logging
+import traceback
+from openai import AsyncOpenAI
+import base64
+from io import BytesIO
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class RecipeProcessingStep(BaseModel):
@@ -54,17 +63,38 @@ class Pipeline:
         enable_schema_validation: bool = True
         output_format: str = "structured_json"  # structured_json, flat_json
         enable_reasoning_display: bool = True
+        openai_api_key: str = ""  # Will be set from env
+        openai_api_base: str = "https://api.openai.com/v1"
+        openai_model: str = "gpt-4o-mini"
+        temperature: float = 0.7
 
     def __init__(self):
         self.name = "Recipe Processing RAG Pipeline"
         self.valves = self.Valves()
         self.sessions: Dict[str, RecipeProcessingSession] = {}
         self.temp_dir = tempfile.mkdtemp()
+        self.openai_client: Optional[AsyncOpenAI] = None
+        self.recipe_data_cache: Dict[str, List[Dict]] = {}
 
     async def on_startup(self):
         """Initialize the pipeline"""
-        print(f"Starting {self.name}")
+        logger.info(f"Starting {self.name}")
         os.makedirs(self.temp_dir, exist_ok=True)
+
+        # Initialize OpenAI client
+        try:
+            # Try to get API key from environment or config
+            api_key = os.getenv("OPENAI_API_KEY", self.valves.openai_api_key)
+            if api_key:
+                self.openai_client = AsyncOpenAI(
+                    api_key=api_key, base_url=self.valves.openai_api_base
+                )
+                logger.info("OpenAI client initialized successfully")
+            else:
+                logger.warning("No OpenAI API key found - using mock mode")
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenAI client: {e}")
+            self.openai_client = None
 
     async def on_shutdown(self):
         """Cleanup on shutdown"""
@@ -373,28 +403,141 @@ class Pipeline:
         self, session: RecipeProcessingSession, step: RecipeProcessingStep
     ):
         """Extract data from Excel files"""
-        for i in range(len(step.sub_steps)):
-            await asyncio.sleep(0.8)
-            step.progress = int((i + 1) / len(step.sub_steps) * 100)
+        try:
+            step.progress = 20
+            recipes = []
+
+            # For demo, create sample recipe data
+            # In production, this would parse actual Excel files
+            sample_recipes = [
+                {
+                    "name": "Spaghetti Carbonara",
+                    "ingredients": "400g spaghetti, 200g pancetta, 4 eggs, 100g parmesan, black pepper, salt",
+                    "instructions": "Cook pasta. Fry pancetta. Mix eggs with cheese. Combine all together.",
+                    "prep_time": "10 mins",
+                    "cook_time": "20 mins",
+                },
+                {
+                    "name": "Chicken Stir Fry",
+                    "ingredients": "500g chicken breast, 2 bell peppers, 1 onion, 3 cloves garlic, soy sauce, ginger, oil",
+                    "instructions": "Cut chicken and vegetables. Heat wok. Stir fry chicken then vegetables. Add sauce.",
+                    "prep_time": "15 mins",
+                    "cook_time": "15 mins",
+                },
+                {
+                    "name": "Chocolate Chip Cookies",
+                    "ingredients": "225g butter, 200g sugar, 2 eggs, 280g flour, 1 tsp vanilla, 340g chocolate chips",
+                    "instructions": "Mix butter and sugar. Add eggs. Mix in flour. Add chocolate chips. Bake at 180C.",
+                    "prep_time": "20 mins",
+                    "cook_time": "12 mins",
+                },
+            ]
+
+            step.progress = 60
+            self.recipe_data_cache[session.session_id] = sample_recipes
+            session.total_recipes = len(sample_recipes)
+
+            step.progress = 100
+            logger.info(f"Extracted {len(sample_recipes)} recipes")
+
+        except Exception as e:
+            logger.error(f"Error extracting data: {e}")
+            raise
 
     async def rag_processing(
         self, session: RecipeProcessingSession, step: RecipeProcessingStep
     ):
-        """Process data using RAG"""
-        for i in range(len(step.sub_steps)):
-            # Simulate processing recipes in chunks
-            chunk_progress = 0
-            while chunk_progress < 100:
-                chunk_progress += 10
-                step.progress = int(
-                    (
-                        i / len(step.sub_steps)
-                        + chunk_progress / 100 / len(step.sub_steps)
-                    )
-                    * 100
-                )
-                session.processed_recipes += 2
-                await asyncio.sleep(0.2)
+        """Process data using OpenAI for enhancement"""
+        try:
+            recipes = self.recipe_data_cache.get(session.session_id, [])
+            if not recipes:
+                logger.warning("No recipes found in cache")
+                return
+
+            enhanced_recipes = []
+
+            for idx, recipe in enumerate(recipes):
+                # Update progress
+                progress = int((idx / len(recipes)) * 100)
+                step.progress = progress
+
+                # Enhance recipe with OpenAI
+                enhanced = await self.enhance_recipe_with_openai(recipe)
+                enhanced_recipes.append(enhanced)
+                session.processed_recipes += 1
+
+                # Small delay to avoid rate limiting
+                await asyncio.sleep(0.5)
+
+            # Store enhanced recipes
+            self.recipe_data_cache[f"{session.session_id}_enhanced"] = enhanced_recipes
+            step.progress = 100
+            logger.info(f"Enhanced {len(enhanced_recipes)} recipes with OpenAI")
+
+        except Exception as e:
+            logger.error(f"Error in RAG processing: {e}")
+            raise
+
+    async def enhance_recipe_with_openai(
+        self, recipe: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Enhance a single recipe using OpenAI"""
+        if not self.openai_client:
+            # Return original recipe if no OpenAI client
+            logger.warning("No OpenAI client available, returning original recipe")
+            return recipe
+
+        try:
+            prompt = f"""
+            You are a professional chef and recipe expert. Enhance and standardize the following recipe data.
+            
+            Original Recipe:
+            Name: {recipe.get('name', '')}
+            Ingredients: {recipe.get('ingredients', '')}
+            Instructions: {recipe.get('instructions', '')}
+            Prep Time: {recipe.get('prep_time', '')}
+            Cook Time: {recipe.get('cook_time', '')}
+            
+            Please provide an enhanced version with:
+            1. Properly formatted ingredient list with exact measurements
+            2. Clear step-by-step instructions
+            3. Estimated servings
+            4. Nutritional highlights (brief)
+            5. Cooking tips
+            
+            Return the response as a valid JSON object with these fields:
+            - name: recipe name
+            - ingredients: array of ingredient objects with 'name' and 'amount'
+            - instructions: detailed step-by-step instructions
+            - prep_time: preparation time
+            - cook_time: cooking time
+            - servings: number of servings
+            - nutritional_info: brief nutritional highlights
+            - tips: cooking tips
+            
+            Respond ONLY with the JSON object, no additional text.
+            """
+
+            response = await self.openai_client.chat.completions.create(
+                model=self.valves.openai_model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a recipe enhancement expert. Always respond with valid JSON.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=self.valves.temperature,
+                response_format={"type": "json_object"},
+            )
+
+            enhanced_data = json.loads(response.choices[0].message.content)
+            return enhanced_data
+
+        except Exception as e:
+            logger.error(f"OpenAI enhancement failed: {e}")
+            # Return original recipe on error
+            return recipe
 
     async def validate_against_schema(
         self, session: RecipeProcessingSession, step: RecipeProcessingStep
@@ -415,31 +558,102 @@ class Pipeline:
     async def generate_final_output(self, session: RecipeProcessingSession):
         """Generate the final JSON artifact"""
 
-        # Simulated output
-        session.output_json = {
-            "metadata": {
-                "total_recipes": session.total_recipes,
-                "processed_at": datetime.now().isoformat(),
-                "schema_version": "1.0",
-            },
-            "recipes": [
-                {
+        try:
+            # Get enhanced recipes from cache
+            enhanced_recipes = self.recipe_data_cache.get(
+                f"{session.session_id}_enhanced", []
+            )
+
+            # If no enhanced recipes, try to get original recipes
+            if not enhanced_recipes:
+                logger.warning("No enhanced recipes found, using original recipes")
+                enhanced_recipes = self.recipe_data_cache.get(session.session_id, [])
+
+            # Format recipes for output
+            formatted_recipes = []
+            for i, recipe in enumerate(enhanced_recipes, 1):
+                # Handle both enhanced and original recipe formats
+                formatted_recipe = {
                     "id": f"recipe_{i}",
-                    "name": f"Sample Recipe {i}",
-                    "ingredients": [
-                        {"name": "ingredient_1", "amount": "2 cups"},
-                        {"name": "ingredient_2", "amount": "1 tbsp"},
-                    ],
-                    "instructions": f"Sample cooking instructions for recipe {i}",
-                    "prep_time": "15 minutes",
-                    "cook_time": "30 minutes",
-                    "servings": 4,
+                    "name": recipe.get("name", f"Recipe {i}"),
                 }
-                for i in range(
-                    1, min(6, session.total_recipes + 1)
-                )  # Sample of recipes
-            ],
-        }
+
+                # Handle ingredients - could be array or string
+                ingredients = recipe.get("ingredients", [])
+                if isinstance(ingredients, str):
+                    # Convert string to array format
+                    formatted_recipe["ingredients"] = [
+                        {"name": ing.strip(), "amount": ""}
+                        for ing in ingredients.split(",")
+                        if ing.strip()
+                    ]
+                elif isinstance(ingredients, list):
+                    # Already in array format
+                    formatted_recipe["ingredients"] = ingredients
+                else:
+                    formatted_recipe["ingredients"] = []
+
+                # Add other fields
+                formatted_recipe["instructions"] = recipe.get("instructions", "")
+                formatted_recipe["prep_time"] = recipe.get("prep_time", "")
+                formatted_recipe["cook_time"] = recipe.get("cook_time", "")
+                formatted_recipe["servings"] = recipe.get("servings", 4)
+
+                # Add optional enhanced fields if they exist
+                if "nutritional_info" in recipe:
+                    formatted_recipe["nutritional_info"] = recipe["nutritional_info"]
+                if "tips" in recipe:
+                    formatted_recipe["tips"] = recipe["tips"]
+
+                formatted_recipes.append(formatted_recipe)
+
+            # Create final output
+            session.output_json = {
+                "metadata": {
+                    "total_recipes": len(formatted_recipes),
+                    "processed_recipes": session.processed_recipes,
+                    "failed_recipes": session.failed_recipes,
+                    "processed_at": datetime.now().isoformat(),
+                    "schema_version": "1.0",
+                    "processing_method": (
+                        "OpenAI Enhanced" if self.openai_client else "Mock Mode"
+                    ),
+                },
+                "recipes": formatted_recipes,
+                "processing_summary": {
+                    "session_id": session.session_id,
+                    "status": session.status,
+                    "created_at": session.created_at.isoformat(),
+                    "completed_at": (
+                        session.completed_at.isoformat()
+                        if session.completed_at
+                        else None
+                    ),
+                    "steps_completed": sum(
+                        1 for step in session.steps if step.status == "completed"
+                    ),
+                    "total_steps": len(session.steps),
+                },
+            }
+
+            logger.info(f"Generated final output with {len(formatted_recipes)} recipes")
+
+        except Exception as e:
+            logger.error(f"Error generating final output: {e}")
+            # Fallback to basic output
+            session.output_json = {
+                "metadata": {
+                    "total_recipes": session.total_recipes,
+                    "processed_at": datetime.now().isoformat(),
+                    "error": str(e),
+                },
+                "recipes": [],
+                "processing_summary": {
+                    "session_id": session.session_id,
+                    "status": "error",
+                    "error_message": str(e),
+                },
+            }
 
     def calculate_overall_progress(self, session: RecipeProcessingSession) -> int:
         """Calculate overall progress across all steps"""
