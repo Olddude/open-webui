@@ -269,7 +269,14 @@
 				<button
 					class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
 					title="Close Panel"
-					on:click={() => togglePanel('task')}
+					on:click={() => {
+						// Close both task and reasoning panels to hide the entire AgentPanel
+						agentState.update(state => ({
+							...state,
+							showTaskPanel: false,
+							showReasoningPanel: false
+						}));
+					}}
 				>
 					<X size={16} />
 				</button>

@@ -26,6 +26,9 @@
 	import UserMenu from '$lib/components/layout/Sidebar/UserMenu.svelte';
 	import MenuLines from '../icons/MenuLines.svelte';
 	import AdjustmentsHorizontal from '../icons/AdjustmentsHorizontal.svelte';
+	import { FileText } from 'lucide-svelte';
+	import { agentState, togglePanel } from '$lib/stores/agentState';
+	import ArtifactsModal from '../layout/ArtifactsModal.svelte';
 
 	import PencilSquare from '../icons/PencilSquare.svelte';
 	import Banner from '../common/Banner.svelte';
@@ -165,6 +168,22 @@
 						</button>
 					</Tooltip>
 
+					{#if $agentState.isAgenticMode}
+						<Tooltip content="Generated Artifacts">
+							<button
+								class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition {$agentState.showArtifactsPanel ? 'bg-gray-50 dark:bg-gray-850' : ''}"
+								on:click={() => {
+									togglePanel('artifacts');
+								}}
+								aria-label="Generated Artifacts"
+							>
+								<div class=" m-auto self-center">
+									<FileText class="size-5" strokeWidth="1.5" />
+								</div>
+							</button>
+						</Tooltip>
+					{/if}
+
 					{#if $mobile}
 						<Tooltip content={$i18n.t('New Chat')}>
 							<button
@@ -277,3 +296,5 @@
 		{/if}
 	</div>
 </nav>
+
+<ArtifactsModal />

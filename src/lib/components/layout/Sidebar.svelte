@@ -58,6 +58,9 @@
 	import Home from '../icons/Home.svelte';
 	import Search from '../icons/Search.svelte';
 	import SearchModal from './SearchModal.svelte';
+	import { Activity } from 'lucide-svelte';
+	import { agentState, togglePanel } from '$lib/stores/agentState';
+	import AgentActivityModal from './AgentActivityModal.svelte';
 
 	const BREAKPOINT = 768;
 
@@ -580,6 +583,39 @@
 			</button>
 		</div>
 
+		{#if $agentState.isAgenticMode}
+			<div class="px-1.5 flex justify-center text-gray-800 dark:text-gray-200">
+				<button
+					class="grow flex items-center space-x-3 rounded-lg px-2 py-[7px] hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none {($agentState.showTaskPanel || $agentState.showReasoningPanel) ? 'bg-gray-100 dark:bg-gray-900' : ''}"
+					on:click={() => {
+						// Toggle both panels to show the Agent Activity
+						if (!$agentState.showTaskPanel && !$agentState.showReasoningPanel) {
+							agentState.update(state => ({
+								...state,
+								showTaskPanel: true,
+								showReasoningPanel: true
+							}));
+						} else {
+							agentState.update(state => ({
+								...state,
+								showTaskPanel: false,
+								showReasoningPanel: false
+							}));
+						}
+					}}
+					draggable="false"
+				>
+					<div class="self-center">
+						<Activity strokeWidth="2" class="size-[1.1rem]" />
+					</div>
+
+					<div class="flex self-center translate-y-[0.5px]">
+						<div class=" self-center text-sm font-primary">Agent Activity</div>
+					</div>
+				</button>
+			</div>
+		{/if}
+
 		{#if ($config?.features?.enable_notes ?? false) && ($user?.role === 'admin' || ($user?.permissions?.features?.notes ?? true))}
 			<div class="px-1.5 flex justify-center text-gray-800 dark:text-gray-200">
 				<a
@@ -1016,6 +1052,8 @@
 		</div>
 	</div>
 </div>
+
+<AgentActivityModal />
 
 <style>
 	.scrollbar-hidden:active::-webkit-scrollbar-thumb,
