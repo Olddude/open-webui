@@ -1,0 +1,9 @@
+.venv
+__pycache__
+.github
+.pytest_cache
+.svelte-kit
+.venv
+build
+node_modules
+.env*

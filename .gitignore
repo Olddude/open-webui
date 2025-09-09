@@ -308,3 +308,4 @@ cypress/videos
 cypress/screenshots
 
 # data dir
+data/
