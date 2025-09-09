@@ -1,0 +1,954 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "UI Agent Form Schema",
+	"description": "Schema for dynamic UI components that can be rendered by both backend agents and frontend",
+	"version": "1.0.0",
+
+	"definitions": {
+		"baseComponent": {
+			"type": "object",
+			"required": ["type", "id"],
+			"properties": {
+				"id": {
+					"type": "string",
+					"description": "Unique identifier for the component"
+				},
+				"type": {
+					"type": "string",
+					"description": "Component type"
+				},
+				"className": {
+					"type": "string",
+					"description": "CSS class names for styling"
+				},
+				"style": {
+					"type": "object",
+					"description": "Inline styles"
+				},
+				"visible": {
+					"type": "boolean",
+					"default": true,
+					"description": "Whether the component is visible"
+				}
+			}
+		},
+
+		"container": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "container" },
+						"layout": {
+							"type": "string",
+							"enum": ["vertical", "horizontal", "grid", "tabs", "accordion", "columns"],
+							"default": "vertical"
+						},
+						"children": {
+							"type": "array",
+							"items": { "$ref": "#/definitions/component" }
+						},
+						"columns": {
+							"type": "number",
+							"description": "Number of columns for grid or columns layout"
+						},
+						"gap": {
+							"type": "string",
+							"description": "Gap between children (CSS value)"
+						}
+					}
+				}
+			]
+		},
+
+		"text": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "text" },
+						"content": {
+							"type": "string",
+							"description": "Text content (supports markdown)"
+						},
+						"variant": {
+							"type": "string",
+							"enum": ["body", "caption", "h1", "h2", "h3", "h4", "h5", "h6", "code"],
+							"default": "body"
+						},
+						"color": {
+							"type": "string",
+							"description": "Text color"
+						}
+					},
+					"required": ["content"]
+				}
+			]
+		},
+
+		"markdown": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "markdown" },
+						"content": {
+							"type": "string",
+							"description": "Markdown content"
+						},
+						"sanitize": {
+							"type": "boolean",
+							"default": true,
+							"description": "Whether to sanitize HTML in markdown"
+						}
+					},
+					"required": ["content"]
+				}
+			]
+		},
+
+		"button": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "button" },
+						"label": {
+							"type": "string",
+							"description": "Button text"
+						},
+						"variant": {
+							"type": "string",
+							"enum": ["primary", "secondary", "success", "danger", "warning", "info", "outline"],
+							"default": "primary"
+						},
+						"size": {
+							"type": "string",
+							"enum": ["small", "medium", "large"],
+							"default": "medium"
+						},
+						"icon": {
+							"type": "string",
+							"description": "Icon identifier"
+						},
+						"disabled": {
+							"type": "boolean",
+							"default": false
+						},
+						"action": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": ["emit", "navigate", "download", "copy"]
+								},
+								"payload": {
+									"type": "object"
+								}
+							}
+						}
+					},
+					"required": ["label"]
+				}
+			]
+		},
+
+		"input": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "input" },
+						"inputType": {
+							"type": "string",
+							"enum": [
+								"text",
+								"number",
+								"email",
+								"password",
+								"date",
+								"time",
+								"datetime",
+								"url",
+								"tel",
+								"color"
+							],
+							"default": "text"
+						},
+						"label": {
+							"type": "string",
+							"description": "Input label"
+						},
+						"placeholder": {
+							"type": "string",
+							"description": "Placeholder text"
+						},
+						"value": {
+							"description": "Current value"
+						},
+						"defaultValue": {
+							"description": "Default value"
+						},
+						"required": {
+							"type": "boolean",
+							"default": false
+						},
+						"disabled": {
+							"type": "boolean",
+							"default": false
+						},
+						"min": {
+							"type": ["number", "string"],
+							"description": "Minimum value for number/date inputs"
+						},
+						"max": {
+							"type": ["number", "string"],
+							"description": "Maximum value for number/date inputs"
+						},
+						"step": {
+							"type": "number",
+							"description": "Step for number inputs"
+						},
+						"helperText": {
+							"type": "string",
+							"description": "Helper text below input"
+						},
+						"validation": {
+							"type": "object",
+							"properties": {
+								"pattern": {
+									"type": "string",
+									"description": "Regex pattern for validation"
+								},
+								"message": {
+									"type": "string",
+									"description": "Validation error message"
+								}
+							}
+						}
+					}
+				}
+			]
+		},
+
+		"textarea": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "textarea" },
+						"label": {
+							"type": "string"
+						},
+						"placeholder": {
+							"type": "string"
+						},
+						"value": {
+							"type": "string"
+						},
+						"rows": {
+							"type": "number",
+							"default": 4
+						},
+						"maxLength": {
+							"type": "number"
+						},
+						"disabled": {
+							"type": "boolean",
+							"default": false
+						},
+						"resizable": {
+							"type": "boolean",
+							"default": true
+						}
+					}
+				}
+			]
+		},
+
+		"select": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "select" },
+						"label": {
+							"type": "string"
+						},
+						"options": {
+							"type": "array",
+							"items": {
+								"oneOf": [
+									{ "type": "string" },
+									{
+										"type": "object",
+										"properties": {
+											"label": { "type": "string" },
+											"value": {},
+											"disabled": { "type": "boolean" }
+										},
+										"required": ["label", "value"]
+									}
+								]
+							}
+						},
+						"value": {},
+						"multiple": {
+							"type": "boolean",
+							"default": false
+						},
+						"searchable": {
+							"type": "boolean",
+							"default": false
+						},
+						"placeholder": {
+							"type": "string"
+						},
+						"disabled": {
+							"type": "boolean",
+							"default": false
+						}
+					},
+					"required": ["options"]
+				}
+			]
+		},
+
+		"checkbox": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "checkbox" },
+						"label": {
+							"type": "string"
+						},
+						"checked": {
+							"type": "boolean",
+							"default": false
+						},
+						"disabled": {
+							"type": "boolean",
+							"default": false
+						}
+					}
+				}
+			]
+		},
+
+		"radio": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "radio" },
+						"label": {
+							"type": "string"
+						},
+						"options": {
+							"type": "array",
+							"items": {
+								"oneOf": [
+									{ "type": "string" },
+									{
+										"type": "object",
+										"properties": {
+											"label": { "type": "string" },
+											"value": {},
+											"disabled": { "type": "boolean" }
+										},
+										"required": ["label", "value"]
+									}
+								]
+							}
+						},
+						"value": {},
+						"inline": {
+							"type": "boolean",
+							"default": false
+						},
+						"disabled": {
+							"type": "boolean",
+							"default": false
+						}
+					},
+					"required": ["options"]
+				}
+			]
+		},
+
+		"slider": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "slider" },
+						"label": {
+							"type": "string"
+						},
+						"min": {
+							"type": "number",
+							"default": 0
+						},
+						"max": {
+							"type": "number",
+							"default": 100
+						},
+						"step": {
+							"type": "number",
+							"default": 1
+						},
+						"value": {
+							"type": "number"
+						},
+						"marks": {
+							"type": "boolean",
+							"default": false
+						},
+						"showValue": {
+							"type": "boolean",
+							"default": true
+						},
+						"disabled": {
+							"type": "boolean",
+							"default": false
+						}
+					}
+				}
+			]
+		},
+
+		"progress": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "progress" },
+						"value": {
+							"type": "number",
+							"minimum": 0,
+							"maximum": 100
+						},
+						"label": {
+							"type": "string"
+						},
+						"variant": {
+							"type": "string",
+							"enum": ["linear", "circular"],
+							"default": "linear"
+						},
+						"color": {
+							"type": "string",
+							"enum": ["primary", "success", "warning", "danger", "info"],
+							"default": "primary"
+						},
+						"showPercentage": {
+							"type": "boolean",
+							"default": true
+						},
+						"indeterminate": {
+							"type": "boolean",
+							"default": false
+						}
+					}
+				}
+			]
+		},
+
+		"alert": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "alert" },
+						"message": {
+							"type": "string"
+						},
+						"variant": {
+							"type": "string",
+							"enum": ["info", "success", "warning", "error"],
+							"default": "info"
+						},
+						"title": {
+							"type": "string"
+						},
+						"dismissible": {
+							"type": "boolean",
+							"default": false
+						},
+						"icon": {
+							"type": "boolean",
+							"default": true
+						}
+					},
+					"required": ["message"]
+				}
+			]
+		},
+
+		"badge": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "badge" },
+						"label": {
+							"type": "string"
+						},
+						"variant": {
+							"type": "string",
+							"enum": ["primary", "secondary", "success", "danger", "warning", "info"],
+							"default": "primary"
+						},
+						"size": {
+							"type": "string",
+							"enum": ["small", "medium", "large"],
+							"default": "medium"
+						}
+					},
+					"required": ["label"]
+				}
+			]
+		},
+
+		"divider": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "divider" },
+						"orientation": {
+							"type": "string",
+							"enum": ["horizontal", "vertical"],
+							"default": "horizontal"
+						},
+						"variant": {
+							"type": "string",
+							"enum": ["solid", "dashed", "dotted"],
+							"default": "solid"
+						},
+						"label": {
+							"type": "string",
+							"description": "Optional text in the middle of divider"
+						}
+					}
+				}
+			]
+		},
+
+		"code": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "code" },
+						"content": {
+							"type": "string"
+						},
+						"language": {
+							"type": "string",
+							"default": "plaintext"
+						},
+						"showLineNumbers": {
+							"type": "boolean",
+							"default": false
+						},
+						"copyButton": {
+							"type": "boolean",
+							"default": true
+						},
+						"theme": {
+							"type": "string",
+							"enum": ["light", "dark", "auto"],
+							"default": "auto"
+						}
+					},
+					"required": ["content"]
+				}
+			]
+		},
+
+		"image": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "image" },
+						"src": {
+							"type": "string",
+							"description": "Image URL or base64 data"
+						},
+						"alt": {
+							"type": "string",
+							"description": "Alt text for accessibility"
+						},
+						"caption": {
+							"type": "string"
+						},
+						"width": {
+							"type": ["string", "number"]
+						},
+						"height": {
+							"type": ["string", "number"]
+						},
+						"objectFit": {
+							"type": "string",
+							"enum": ["contain", "cover", "fill", "none", "scale-down"],
+							"default": "contain"
+						}
+					},
+					"required": ["src"]
+				}
+			]
+		},
+
+		"chart": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "chart" },
+						"chartType": {
+							"type": "string",
+							"enum": ["line", "bar", "pie", "donut", "area", "scatter", "radar"],
+							"default": "line"
+						},
+						"data": {
+							"type": "object",
+							"properties": {
+								"labels": {
+									"type": "array",
+									"items": { "type": "string" }
+								},
+								"datasets": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"label": { "type": "string" },
+											"data": {
+												"type": "array",
+												"items": { "type": "number" }
+											},
+											"backgroundColor": {},
+											"borderColor": {}
+										}
+									}
+								}
+							}
+						},
+						"options": {
+							"type": "object",
+							"description": "Chart.js options"
+						},
+						"height": {
+							"type": ["string", "number"],
+							"default": "300px"
+						}
+					},
+					"required": ["data"]
+				}
+			]
+		},
+
+		"table": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "table" },
+						"columns": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"key": { "type": "string" },
+									"label": { "type": "string" },
+									"sortable": { "type": "boolean" },
+									"width": { "type": ["string", "number"] },
+									"align": {
+										"type": "string",
+										"enum": ["left", "center", "right"]
+									}
+								},
+								"required": ["key", "label"]
+							}
+						},
+						"data": {
+							"type": "array",
+							"items": {
+								"type": "object"
+							}
+						},
+						"striped": {
+							"type": "boolean",
+							"default": false
+						},
+						"bordered": {
+							"type": "boolean",
+							"default": true
+						},
+						"hoverable": {
+							"type": "boolean",
+							"default": true
+						},
+						"searchable": {
+							"type": "boolean",
+							"default": false
+						},
+						"paginated": {
+							"type": "boolean",
+							"default": false
+						},
+						"pageSize": {
+							"type": "number",
+							"default": 10
+						}
+					},
+					"required": ["columns", "data"]
+				}
+			]
+		},
+
+		"fileUpload": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "fileUpload" },
+						"label": {
+							"type": "string"
+						},
+						"accept": {
+							"type": "string",
+							"description": "Accepted file types"
+						},
+						"multiple": {
+							"type": "boolean",
+							"default": false
+						},
+						"maxSize": {
+							"type": "string",
+							"description": "Max file size (e.g., '10MB')"
+						},
+						"dragDrop": {
+							"type": "boolean",
+							"default": true
+						},
+						"showPreview": {
+							"type": "boolean",
+							"default": true
+						}
+					}
+				}
+			]
+		},
+
+		"metric": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "metric" },
+						"label": {
+							"type": "string"
+						},
+						"value": {
+							"type": ["string", "number"]
+						},
+						"delta": {
+							"type": ["string", "number"],
+							"description": "Change from previous value"
+						},
+						"deltaType": {
+							"type": "string",
+							"enum": ["increase", "decrease", "neutral"],
+							"default": "neutral"
+						},
+						"prefix": {
+							"type": "string"
+						},
+						"suffix": {
+							"type": "string"
+						},
+						"icon": {
+							"type": "string"
+						}
+					},
+					"required": ["label", "value"]
+				}
+			]
+		},
+
+		"tabs": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "tabs" },
+						"tabs": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"id": { "type": "string" },
+									"label": { "type": "string" },
+									"icon": { "type": "string" },
+									"disabled": { "type": "boolean" },
+									"content": {
+										"type": "array",
+										"items": { "$ref": "#/definitions/component" }
+									}
+								},
+								"required": ["id", "label", "content"]
+							}
+						},
+						"activeTab": {
+							"type": "string"
+						},
+						"variant": {
+							"type": "string",
+							"enum": ["default", "pills", "underline"],
+							"default": "default"
+						}
+					},
+					"required": ["tabs"]
+				}
+			]
+		},
+
+		"accordion": {
+			"allOf": [
+				{ "$ref": "#/definitions/baseComponent" },
+				{
+					"properties": {
+						"type": { "const": "accordion" },
+						"items": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"id": { "type": "string" },
+									"title": { "type": "string" },
+									"content": {
+										"type": "array",
+										"items": { "$ref": "#/definitions/component" }
+									},
+									"expanded": { "type": "boolean" }
+								},
+								"required": ["id", "title", "content"]
+							}
+						},
+						"multiple": {
+							"type": "boolean",
+							"default": false,
+							"description": "Allow multiple panels to be expanded"
+						}
+					},
+					"required": ["items"]
+				}
+			]
+		},
+
+		"component": {
+			"oneOf": [
+				{ "$ref": "#/definitions/container" },
+				{ "$ref": "#/definitions/text" },
+				{ "$ref": "#/definitions/markdown" },
+				{ "$ref": "#/definitions/button" },
+				{ "$ref": "#/definitions/input" },
+				{ "$ref": "#/definitions/textarea" },
+				{ "$ref": "#/definitions/select" },
+				{ "$ref": "#/definitions/checkbox" },
+				{ "$ref": "#/definitions/radio" },
+				{ "$ref": "#/definitions/slider" },
+				{ "$ref": "#/definitions/progress" },
+				{ "$ref": "#/definitions/alert" },
+				{ "$ref": "#/definitions/badge" },
+				{ "$ref": "#/definitions/divider" },
+				{ "$ref": "#/definitions/code" },
+				{ "$ref": "#/definitions/image" },
+				{ "$ref": "#/definitions/chart" },
+				{ "$ref": "#/definitions/table" },
+				{ "$ref": "#/definitions/fileUpload" },
+				{ "$ref": "#/definitions/metric" },
+				{ "$ref": "#/definitions/tabs" },
+				{ "$ref": "#/definitions/accordion" }
+			]
+		}
+	},
+
+	"type": "object",
+	"properties": {
+		"version": {
+			"type": "string",
+			"description": "Schema version",
+			"const": "1.0.0"
+		},
+		"type": {
+			"type": "string",
+			"const": "ui-agent-form"
+		},
+		"metadata": {
+			"type": "object",
+			"properties": {
+				"title": { "type": "string" },
+				"description": { "type": "string" },
+				"agent": { "type": "string" },
+				"timestamp": { "type": "string" },
+				"sessionId": { "type": "string" },
+				"capabilities": {
+					"type": "array",
+					"items": { "type": "string" }
+				}
+			}
+		},
+		"layout": {
+			"type": "object",
+			"properties": {
+				"type": {
+					"type": "string",
+					"enum": ["single", "split", "dashboard"],
+					"default": "single"
+				},
+				"responsive": {
+					"type": "boolean",
+					"default": true
+				}
+			}
+		},
+		"components": {
+			"type": "array",
+			"items": { "$ref": "#/definitions/component" }
+		},
+		"state": {
+			"type": "object",
+			"description": "Initial state values for components"
+		},
+		"actions": {
+			"type": "object",
+			"description": "Action handlers for events",
+			"additionalProperties": {
+				"type": "object",
+				"properties": {
+					"type": { "type": "string" },
+					"handler": { "type": "string" },
+					"params": { "type": "object" }
+				}
+			}
+		},
+		"theme": {
+			"type": "object",
+			"properties": {
+				"mode": {
+					"type": "string",
+					"enum": ["light", "dark", "auto"],
+					"default": "auto"
+				},
+				"primaryColor": { "type": "string" },
+				"fontFamily": { "type": "string" }
+			}
+		}
+	},
+	"required": ["version", "type", "components"]
+}
