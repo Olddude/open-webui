@@ -12,9 +12,9 @@
 		{
 			"type": "bashdb",
 			"request": "launch",
-			"name": "[Debug] Shell",
+			"name": "[Debug] Script",
 			"cwd": "${workspaceFolder}",
-			"program": "${workspaceFolder}/${input:target}",
+			"program": "${workspaceFolder}/scripts/${input:target}",
 			"args": [],
 			"env": {},
 			"internalConsoleOptions": "openOnSessionStart"
@@ -44,9 +44,9 @@
 		{
 			"type": "debugpy",
 			"request": "launch",
-			"name": "[Debug] Recipe Rag Function",
+			"name": "[Debug] Function",
 			"preLaunchTask": "venv_activate",
-			"program": "${workspaceFolder}/backend/functions/recipe_rag_function.py",
+			"program": "${workspaceFolder}/backend/functions/${input:target}",
 			"args": [],
 			"cwd": "${workspaceFolder}/backend",
 			"console": "integratedTerminal",
