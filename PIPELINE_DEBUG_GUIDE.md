@@ -1,8 +1,8 @@
-# How to Debug the Recipe RAG Pipeline
+# How to Debug the Recipe RAG Function
 
 ## Breakpoint Location
 
-Your breakpoint is at line 72 in `workspace/pipelines/recipe_rag_pipeline.py`:
+Your breakpoint is at line 72 in `workspace/functions/recipe_rag_function.py`:
 
 ```python
 self.recipe_data_cache: Dict[str, List[Dict]] = {}  # Line 72
@@ -48,13 +48,13 @@ Create `.vscode/launch.json` if it doesn't exist:
 }
 ```
 
-### 2. Register the Pipeline in Open WebUI
+### 2. Register the Function in Open WebUI
 
-The pipeline needs to be registered with Open WebUI. There are two ways:
+The function needs to be registered with Open WebUI. There are two ways:
 
 #### Method A: Through the UI (Recommended)
 
-**IMPORTANT**: Use the **Pipelines** section, NOT the Functions section!
+**IMPORTANT**: Use the **Functions** section, NOT the Pipelines section!
 
 1. **Navigate to the Admin Panel**
    - Open <http://localhost:5173>
@@ -65,8 +65,8 @@ The pipeline needs to be registered with Open WebUI. There are two ways:
 2. **Add the Pipeline**
    - Click **"+ Add Pipeline"** button
    - You have two options:
-     a. **Copy-paste the code**: Open `workspace/pipelines/recipe_rag_pipeline.py` and paste the entire content
-     b. **Upload the file**: Click upload and select `workspace/pipelines/recipe_rag_pipeline.py`
+     a. **Copy-paste the code**: Open `workspace/functions/recipe_rag_function.py` and paste the entire content
+     b. **Upload the file**: Click upload and select `workspace/functions/recipe_rag_function.py`
    - Click **"Save"** or **"Create"**
    - The pipeline will be registered and **instantiated** (hitting your breakpoint)
 
@@ -78,7 +78,7 @@ Ensure the pipeline is in the correct directory:
 
 ```bash
 # The pipeline should be in:
-workspace/pipelines/recipe_rag_pipeline.py
+workspace/functions/recipe_rag_function.py
 
 # Open WebUI auto-loads pipelines from this directory on startup
 ```

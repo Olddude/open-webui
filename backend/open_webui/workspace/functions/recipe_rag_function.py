@@ -1,26 +1,19 @@
 """
 title: Recipe RAG Processing Function
 author: Open WebUI
-description: A comprehensive function for processing recipe data using RAG with OpenAI integration
+description: Data using RAG with OpenAI integration
 requirements: pandas, openpyxl, jsonschema, openai
 """
 
 from typing import List, Dict, Any, Optional, AsyncGenerator
 import asyncio
 import json
-import time
-import pandas as pd
 import os
 from datetime import datetime
 from pydantic import BaseModel
-from jsonschema import validate, ValidationError
-import tempfile
 import uuid
 import logging
-import traceback
 from openai import AsyncOpenAI
-import base64
-from io import BytesIO
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -401,17 +394,17 @@ class Pipe:
         try:
             prompt = f"""
             Enhance this recipe with additional information:
-            
+
             Name: {recipe.get('name', '')}
             Ingredients: {recipe.get('ingredients', '')}
             Instructions: {recipe.get('instructions', '')}
-            
+
             Provide:
             1. Properly formatted ingredients list
             2. Detailed step-by-step instructions
             3. Servings, difficulty level, cuisine type
             4. Brief nutritional highlights
-            
+
             Return as JSON.
             """
 

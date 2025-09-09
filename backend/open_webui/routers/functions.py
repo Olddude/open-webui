@@ -501,28 +501,3 @@ async def update_function_user_valves_by_id(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
-
-
-############################
-# ReloadWorkspace
-############################
-
-
-@router.post("/workspace/reload")
-async def reload_workspace_functions(user=Depends(get_admin_user)):
-    """Reload functions and pipelines from the workspace filesystem directory."""
-    try:
-        from open_webui.utils.workspace_loader import reload_workspace
-        result = reload_workspace()
-        return {
-            "success": True,
-            "message": "Workspace reloaded successfully",
-            "loaded": result
-        }
-    except Exception as e:
-        log.exception(f"Error reloading workspace: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to reload workspace: {str(e)}"
-        )
-

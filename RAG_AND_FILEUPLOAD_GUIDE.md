@@ -336,7 +336,7 @@ rag_config = requests.put(
 Create custom processing pipelines for specific document types:
 
 ```python
-# workspace/pipelines/custom_rag_pipeline.py
+# workspace/functions/custom_rag_function.py
 from typing import List, Dict
 from pydantic import BaseModel
 
@@ -370,13 +370,13 @@ The repository includes a recipe-specific RAG pipeline that demonstrates:
 - OpenAI-powered recipe enhancement
 - Agentic UI integration with reasoning and task planning
 
-Location: `workspace/pipelines/recipe_rag_pipeline.py`
+Location: `workspace/functions/recipe_rag_function.py`
 
 #### Using the Recipe Pipeline
 
 1. **Register the Pipeline**:
    - Navigate to Admin Panel → Pipelines
-   - Upload `workspace/pipelines/recipe_rag_pipeline.py`
+   - Upload `workspace/functions/recipe_rag_function.py`
    - The pipeline will be automatically loaded
 
 2. **Trigger in Chat**:

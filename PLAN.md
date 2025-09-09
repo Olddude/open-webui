@@ -136,7 +136,7 @@ Transform Open WebUI from a traditional chat interface into a modern agentic UI 
 
 #### 5.1 Agentic Pipeline Templates
 
-Create pipeline templates in `workspace/pipelines/`:
+Create function templates in `workspace/functions/`:
 
 ```python
 # agentic_reasoning_pipeline.py
