@@ -137,12 +137,8 @@ class Pipe:
             # Format the response
             response = self.format_response(session, processing_result)
 
-            # Stream the response
-            if body.get("stream", False):
-                for chunk in response:
-                    yield chunk
-            else:
-                yield response
+            # Stream the response - yield the entire response at once
+            yield response
         else:
             # Pass through for non-recipe requests
             yield "I can help you process recipe data using RAG. Try asking me to 'process recipes' or 'convert recipe data to JSON'."
@@ -268,23 +264,35 @@ class Pipe:
         step.start_time = datetime.now()
 
         try:
+            # Process each step with timeout
             if "Input Analysis" in step.step_name:
-                await self.analyze_input(session, step)
+                await asyncio.wait_for(self.analyze_input(session, step), timeout=10.0)
             elif "Data Preparation" in step.step_name:
-                await self.prepare_data(session, step)
+                await asyncio.wait_for(self.prepare_data(session, step), timeout=15.0)
             elif "RAG Enhancement" in step.step_name:
-                await self.rag_enhancement(session, step)
+                await asyncio.wait_for(
+                    self.rag_enhancement(session, step), timeout=120.0
+                )
             elif "Output Generation" in step.step_name:
-                await self.generate_output(session, step)
+                await asyncio.wait_for(
+                    self.generate_output(session, step), timeout=10.0
+                )
 
             step.status = "completed"
             step.progress = 100
             step.end_time = datetime.now()
 
+        except asyncio.TimeoutError:
+            step.status = "failed"
+            step.error = f"Step '{step.step_name}' timed out"
+            step.end_time = datetime.now()
+            logger.error(f"Step timeout: {step.step_name}")
+            raise
         except Exception as e:
             step.status = "failed"
             step.error = str(e)
             step.end_time = datetime.now()
+            logger.error(f"Step failed: {step.step_name} - {str(e)}")
             raise
 
     async def analyze_input(
@@ -408,16 +416,19 @@ class Pipe:
             Return as JSON.
             """
 
-            response = await self.openai_client.chat.completions.create(
-                model=self.valves.openai_model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a recipe enhancement expert.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=self.valves.temperature,
+            response = await asyncio.wait_for(
+                self.openai_client.chat.completions.create(
+                    model=self.valves.openai_model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are a recipe enhancement expert.",
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=self.valves.temperature,
+                ),
+                timeout=30.0,  # 30 second timeout
             )
 
             enhanced_data = json.loads(response.choices[0].message.content)
