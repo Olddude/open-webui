@@ -28,7 +28,7 @@
 	import AdjustmentsHorizontal from '../icons/AdjustmentsHorizontal.svelte';
 	import { FileText } from 'lucide-svelte';
 	import { agentState, togglePanel } from '$lib/stores/agentState';
-	import ArtifactsModal from '../layout/ArtifactsModal.svelte';
+	import ArtifactsPanel from '../chat/ArtifactsPanel.svelte';
 
 	import PencilSquare from '../icons/PencilSquare.svelte';
 	import Banner from '../common/Banner.svelte';
@@ -297,4 +297,11 @@
 	</div>
 </nav>
 
-<ArtifactsModal />
+<!-- Artifacts Panel Drawer -->
+{#if $agentState.isAgenticMode && $agentState.showArtifactsPanel}
+	<div 
+		class="fixed top-0 right-0 h-screen w-[400px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-lg z-40 transform transition-transform duration-300 ease-in-out"
+	>
+		<ArtifactsPanel />
+	</div>
+{/if}

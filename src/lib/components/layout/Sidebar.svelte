@@ -60,7 +60,7 @@
 	import SearchModal from './SearchModal.svelte';
 	import { Activity } from 'lucide-svelte';
 	import { agentState, togglePanel } from '$lib/stores/agentState';
-	import AgentActivityModal from './AgentActivityModal.svelte';
+	import AgentPanel from '../chat/AgentPanel.svelte';
 
 	const BREAKPOINT = 768;
 
@@ -1053,7 +1053,15 @@
 	</div>
 </div>
 
-<AgentActivityModal />
+<!-- Agent Panel Drawer -->
+{#if $agentState.isAgenticMode && ($agentState.showTaskPanel || $agentState.showReasoningPanel)}
+	<div 
+		class="fixed top-0 left-0 h-screen w-[400px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-lg z-40 transform transition-transform duration-300 ease-in-out"
+		style="transform: translateX({$showSidebar ? '260px' : '0px'})"
+	>
+		<AgentPanel />
+	</div>
+{/if}
 
 <style>
 	.scrollbar-hidden:active::-webkit-scrollbar-thumb,
