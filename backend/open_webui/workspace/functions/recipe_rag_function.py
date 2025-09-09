@@ -5,7 +5,7 @@ description: A comprehensive function for processing recipe data using RAG with 
 requirements: pandas, openpyxl, jsonschema, openai
 """
 
-from typing import List, Dict, Any, Optional, Generator, Union
+from typing import List, Dict, Any, Optional, AsyncGenerator
 import asyncio
 import json
 import time
@@ -105,12 +105,13 @@ class Pipe:
         __metadata__: Optional[dict] = None,
         __event_emitter__=None,
         __event_call__=None,
-    ) -> Union[str, Generator, Iterator]:
+    ) -> AsyncGenerator[str, None]:
         """Main processing function for the RAG pipeline"""
 
         messages = body.get("messages", [])
         if not messages:
-            return "No messages provided"
+            yield "No messages provided"
+            return
 
         last_message = messages[-1]
         user_input = last_message.get("content", "")
