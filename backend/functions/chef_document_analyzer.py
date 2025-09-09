@@ -386,7 +386,9 @@ chef's analysis! 👨‍🍳✨
                 try:
                     decoded_content = base64.b64decode(base64_data).decode("utf-8")
                     file_data["content"] = decoded_content
-                    file_data["type"] = "text"
+                    file_data["type"] = self._detect_content_type(
+                        filename, decoded_content
+                    )
                 except Exception:
                     # If it's not text, treat as binary
                     file_data["content"] = f"[Binary file: {filename}]"
@@ -394,13 +396,92 @@ chef's analysis! 👨‍🍳✨
             else:
                 # Assume it's already text content
                 file_data["content"] = file_content
-                file_data["type"] = "text"
+                file_data["type"] = self._detect_content_type(filename, file_content)
+
+            # Process content based on type
+            file_data["processed_content"] = self._process_content_by_type(
+                file_data["content"], file_data["type"]
+            )
 
             return file_data
 
         except Exception as e:
             logger.error(f"Error processing file {filename}: {e}")
             return None
+
+    def _detect_content_type(self, filename: str, content: str) -> str:
+        """Detect content type based on filename and content"""
+
+        extension = filename.split(".")[-1].lower() if "." in filename else ""
+
+        if extension in ["html", "htm"]:
+            return "html"
+        elif extension == "md":
+            return "markdown"
+        elif extension == "json":
+            return "json"
+        elif extension == "csv":
+            return "csv"
+        elif content.strip().startswith(("<html", "<!DOCTYPE", "<HTML")):
+            return "html"
+        elif content.strip().startswith("#") or "##" in content:
+            return "markdown"
+        elif content.strip().startswith(("{", "[")):
+            return "json"
+        else:
+            return "text"
+
+    def _process_content_by_type(self, content: str, content_type: str) -> str:
+        """Process content based on its detected type"""
+
+        if content_type == "html":
+            # Strip HTML tags for analysis but keep structure
+            import re
+
+            # Remove HTML tags but preserve line breaks and structure
+            text = re.sub(
+                r"<script[^>]*>.*?</script>",
+                "",
+                content,
+                flags=re.DOTALL | re.IGNORECASE,
+            )
+            text = re.sub(
+                r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL | re.IGNORECASE
+            )
+            text = re.sub(r"<[^>]+>", " ", text)
+            # Convert HTML entities
+            text = (
+                text.replace("&nbsp;", " ")
+                .replace("&amp;", "&")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+            )
+            return " ".join(text.split())  # Clean up whitespace
+
+        elif content_type == "markdown":
+            # Clean markdown formatting for analysis while preserving meaning
+            import re
+
+            text = re.sub(r"#+\s*", "", content)  # Remove heading markers
+            text = re.sub(r"\*{1,2}([^*]+)\*{1,2}", r"\1", text)  # Remove bold/italic
+            text = re.sub(r"`([^`]+)`", r"\1", text)  # Remove inline code
+            text = re.sub(
+                r"\[([^\]]+)\]\([^)]+\)", r"\1", text
+            )  # Remove links, keep text
+            return text
+
+        elif content_type == "json":
+            # Pretty format JSON for better analysis
+            try:
+                import json as json_module
+
+                parsed = json_module.loads(content)
+                return json_module.dumps(parsed, indent=2, ensure_ascii=False)
+            except:
+                return content
+
+        else:
+            return content
 
     async def analyze_documents_as_chef(
         self, documents: List[Dict[str, Any]], user_query: str = ""
@@ -421,11 +502,14 @@ chef's analysis! 👨‍🍳✨
         doc_summary = []
         for i, doc in enumerate(documents, 1):
             doc_summary.append(f"**Document {i}: {doc['filename']}**")
+            content_to_analyze = doc.get("processed_content", doc["content"])
             content_preview = (
-                doc["content"][:1000] + "..."
-                if len(doc["content"]) > 1000
-                else doc["content"]
+                content_to_analyze[:1000] + "..."
+                if len(content_to_analyze) > 1000
+                else content_to_analyze
             )
+            doc_type = doc.get("type", "text")
+            doc_summary.append(f"Content type: {doc_type}")
             doc_summary.append(f"Content preview: {content_preview}\n")
 
         combined_docs = "\n".join(doc_summary)
@@ -475,20 +559,26 @@ your response with clear sections and actionable insights.
 
             chef_analysis = response.choices[0].message.content.strip()
 
-            # Add chef header and footer
+            # Add chef header and footer with enhanced formatting
             final_response = f"""
-👨‍🍳 **Chef's Document Analysis**
+<div class="chef-analysis-report">
+
+## 👨‍🍳 **Chef's Document Analysis**
 
 {chef_analysis}
 
 ---
-📊 **Analysis Summary:**
-- Documents processed: {len(documents)}
-- Files analyzed: {', '.join([doc['filename'] for doc in documents])}
-- Analysis completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-🍳 **Chef's note:** Feel free to ask follow-up questions about any of 
-the culinary insights I've shared!
+### 📊 **Analysis Summary**
+- **Documents processed:** {len(documents)}
+- **Files analyzed:** {', '.join([doc['filename'] for doc in documents])}
+- **Content types:** {', '.join(set([doc.get('type', 'text') for doc in documents]))}
+- **Analysis completed:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+### 🍳 **Chef's Note**
+Feel free to ask follow-up questions about any of the culinary insights I've shared! I can provide more specific guidance on recipes, techniques, or ingredients.
+
+</div>
 """
 
             return final_response
@@ -540,7 +630,8 @@ the culinary insights I've shared!
         found_techniques = 0
 
         for doc in documents:
-            content_lower = doc["content"].lower()
+            content_to_analyze = doc.get("processed_content", doc["content"])
+            content_lower = content_to_analyze.lower()
             file_ext = (
                 doc["filename"].split(".")[-1] if "." in doc["filename"] else "unknown"
             )
@@ -557,57 +648,62 @@ the culinary insights I've shared!
             )
 
         analysis = f"""
-👨‍🍳 **Chef's Document Analysis** (Mock Mode)
+<div class="chef-mock-analysis">
 
-**Documents Overview:**
-- Files processed: {len(documents)}
-- File types: {', '.join(file_types)}
-- Total content: {total_content_length:,} characters
+## 👨‍🍳 **Chef's Document Analysis** (Mock Mode)
 
-🔍 **Culinary Content Detection:**
-- Recipe-related content: {found_recipes} references found
-- Nutrition information: {found_nutrition} references found
-- Cooking techniques: {found_techniques} references found
+### **Documents Overview**
+- **Files processed:** {len(documents)}
+- **File types:** {', '.join(file_types)}
+- **Content types:** {', '.join(set([doc.get('type', 'text') for doc in documents]))}
+- **Total content:** {total_content_length:,} characters
 
-📋 **Files Analyzed:**
+### 🔍 **Culinary Content Detection**
+- **Recipe-related content:** {found_recipes} references found
+- **Nutrition information:** {found_nutrition} references found
+- **Cooking techniques:** {found_techniques} references found
+
+### 📋 **Files Analyzed**
 {chr(10).join([
-    f"• {doc['filename']} ({len(doc['content'])} chars)" 
+    f"• **{doc['filename']}** ({len(doc['content'])} chars) - *{doc.get('type', 'text')}*" 
     for doc in documents
 ])}
 
-🍳 **Chef's Mock Insights:**
+### 🍳 **Chef's Mock Insights**
 Based on my analysis, your documents appear to contain 
 {"recipe" if found_recipes > 5 else "food-related"} content. 
 Here are my culinary observations:
 
-**Recipe Analysis:**
+**📝 Recipe Analysis:**
 - I've identified potential recipe content with cooking instructions 
   and ingredient lists
 - The documents seem to focus on 
   {"international cuisine" if len(documents) > 2 else "specific methods"}
 
-**Cooking Techniques:**
+**👨‍🍳 Cooking Techniques:**
 - Various cooking methods are mentioned throughout the documents
 - Temperature and timing information appears to be present
 
-**Ingredient Insights:**
+**🥬 Ingredient Insights:**
 - Multiple ingredients are referenced across the documents
 - Seasonal and fresh ingredient usage seems to be emphasized
 
-**Chef's Recommendations:**
+### **Chef's Recommendations:**
 1. 🥗 Focus on fresh, seasonal ingredients when possible
 2. 🔥 Pay attention to cooking temperatures and timing
 3. 🧂 Taste and adjust seasonings throughout the cooking process
 4. 📖 Keep these documents as reference for future culinary adventures
 
 ---
-⚠️ **Note:** This is a mock analysis. For detailed culinary insights, 
-please configure an OpenAI API key in the settings.
+> ⚠️ **Note:** This is a mock analysis. For detailed culinary insights, 
+> please configure an OpenAI API key in the settings.
 
-🍳 **Chef's note:** Even without AI analysis, I can see you're 
-passionate about cooking! Feel free to ask specific questions about 
-any recipes or techniques you'd like to discuss!
-"""
+### 🍳 **Chef's Final Note**
+Even without AI analysis, I can see you're passionate about cooking! 
+Feel free to ask specific questions about any recipes or techniques 
+you'd like to discuss!
+
+</div>"""
 
         if user_query:
             analysis += (
