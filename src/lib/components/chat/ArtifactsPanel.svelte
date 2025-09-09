@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { agentState } from '$lib/stores/agentState';
-	import { File, Code, FileText, Image, Download, ExternalLink, Copy, Check } from 'lucide-svelte';
+	import { agentState, togglePanel } from '$lib/stores/agentState';
+	import { File, Code, FileText, Image, Download, ExternalLink, Copy, Check, X } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	
 	$: artifacts = $agentState.artifacts;
@@ -70,9 +70,18 @@
 			<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
 				Generated Artifacts
 			</h2>
-			<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
-				{artifacts.length} items
-			</span>
+			<div class="flex items-center gap-2">
+				<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
+					{artifacts.length} items
+				</span>
+				<button
+					class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+					title="Close Panel"
+					on:click={() => togglePanel('artifacts')}
+				>
+					<X size={16} />
+				</button>
+			</div>
 		</div>
 		<p class="text-sm text-gray-600 dark:text-gray-400">
 			Code, documents, and files generated during conversation

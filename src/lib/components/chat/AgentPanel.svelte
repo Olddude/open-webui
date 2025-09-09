@@ -5,7 +5,7 @@
 	import ReasoningDisplay from './Messages/ReasoningDisplay.svelte';
 	import TaskMonitor from './Messages/TaskMonitor.svelte';
 	import RecipeUploadPanel from './RecipeUploadPanel.svelte';
-	import { ChevronDown, ChevronRight, Brain, ListTodo, Activity, Settings, Play, RotateCcw, ChefHat } from 'lucide-svelte';
+	import { ChevronDown, ChevronRight, Brain, ListTodo, Activity, Settings, Play, RotateCcw, ChefHat, X } from 'lucide-svelte';
 	
 	let showRecipeUpload = false;
 
@@ -265,6 +265,13 @@
 					title="Settings"
 				>
 					<Settings size={16} />
+				</button>
+				<button
+					class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+					title="Close Panel"
+					on:click={() => togglePanel('task')}
+				>
+					<X size={16} />
 				</button>
 			</div>
 		</div>
