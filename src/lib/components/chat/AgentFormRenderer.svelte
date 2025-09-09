@@ -3,13 +3,19 @@
 	import { marked } from 'marked';
 	import hljs from 'highlight.js';
 	import { Chart, registerables } from 'chart.js';
+	import { schemaValidator, type FormData as SchemaFormData, type ValidationResult } from '$lib/utils/schemaValidator';
 	
 	// Register Chart.js components
 	Chart.register(...registerables);
 	
-	export let formData: any = {};
+	export let formData: SchemaFormData | any = {};
 	export let sessionId: string = '';
 	export let onAction: (action: string, data: any) => void = () => {};
+	export let enableValidation: boolean = true;
+	
+	// Component state management
+	let validationResult: ValidationResult | null = null;
+	let isValidating: boolean = false;
 	
 	// Component state management
 	let componentState: Record<string, any> = formData.state || {};
@@ -47,6 +53,47 @@
 		if (payload.value !== undefined) {
 			componentState[component.id] = payload.value;
 		}
+		
+		// Trigger validation if enabled
+		if (enableValidation && actionType === 'change') {
+			validateForm();
+		}
+	}
+	
+	// Validate the entire form
+	async function validateForm() {
+		if (!enableValidation) return;
+		
+		isValidating = true;
+		try {
+			validationResult = await schemaValidator.validateFormData(formData);
+		} catch (error) {
+			console.error('Form validation failed:', error);
+			validationResult = {
+				isValid: false,
+				errors: [],
+				warnings: []
+			};
+		} finally {
+			isValidating = false;
+		}
+	}
+	
+	// Get validation errors for a specific component
+	function getComponentErrors(componentId: string): string[] {
+		if (!validationResult || !validationResult.errors) return [];
+		
+		return validationResult.errors
+			.filter(error => {
+				const path = (error as any).instancePath || (error as any).dataPath || '';
+				return path.includes(componentId) || path.includes(`components/${componentId}`);
+			})
+			.map(error => error.message || 'Validation error');
+	}
+	
+	// Check if component has validation errors
+	function hasComponentErrors(componentId: string): boolean {
+		return getComponentErrors(componentId).length > 0;
 	}
 	
 	// Render individual component based on type
@@ -171,6 +218,9 @@
 		const value = componentState[component.id] || component.value || component.defaultValue || '';
 		const disabled = component.disabled ? 'disabled' : '';
 		const required = component.required ? 'required' : '';
+		const errors = getComponentErrors(component.id);
+		const hasError = hasComponentErrors(component.id);
+		const errorClass = hasError ? 'component-error' : '';
 		
 		return `
 			<div class="agent-input-wrapper">
@@ -178,7 +228,7 @@
 				<input 
 					id="${component.id}"
 					type="${component.inputType || 'text'}"
-					class="agent-input ${className}"
+					class="agent-input ${className} ${errorClass}"
 					style="${style}"
 					value="${value}"
 					placeholder="${component.placeholder || ''}"
@@ -190,6 +240,7 @@
 					${component.validation?.pattern ? `pattern="${component.validation.pattern}"` : ''}
 				/>
 				${component.helperText ? `<small class="helper-text">${component.helperText}</small>` : ''}
+				${hasError ? `<div class="component-errors">${errors.map(error => `<small class="error-text">${error}</small>`).join('')}</div>` : ''}
 			</div>
 		`;
 	}
@@ -789,6 +840,11 @@
 			initializeCharts();
 			attachEventListeners();
 		}, 100);
+		
+		// Initialize validation if enabled
+		if (enableValidation) {
+			validateForm();
+		}
 	});
 	
 	onDestroy(() => {
@@ -809,6 +865,27 @@
 		</div>
 	{/if}
 	
+	<!-- Validation Status -->
+	{#if enableValidation && validationResult && !validationResult.isValid}
+		<div class="validation-errors">
+			<div class="error-header">
+				<span class="error-icon">⚠️</span>
+				<span>Form contains validation errors:</span>
+			</div>
+			<ul class="error-list">
+				{#each schemaValidator.formatErrors(validationResult.errors) as error}
+					<li>{error}</li>
+				{/each}
+			</ul>
+		</div>
+	{/if}
+	
+	{#if isValidating}
+		<div class="validation-loading">
+			<span>Validating form...</span>
+		</div>
+	{/if}
+	
 	<div class="form-components layout-{formData.layout?.type || 'single'}">
 		{@html formData.components?.map(renderComponent).join('') || ''}
 	</div>
@@ -818,6 +895,73 @@
 	.agent-form-renderer {
 		padding: 1rem;
 		font-family: var(--font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
+	}
+	
+	/* Validation styles */
+	.validation-errors {
+		background: var(--color-danger-light, #fff2f2);
+		border: 1px solid var(--color-danger, #dc3545);
+		border-radius: 0.5rem;
+		padding: 1rem;
+		margin-bottom: 1rem;
+	}
+	
+	.error-header {
+		display: flex;
+		align-items: center;
+		font-weight: 600;
+		color: var(--color-danger, #dc3545);
+		margin-bottom: 0.5rem;
+	}
+	
+	.error-icon {
+		margin-right: 0.5rem;
+		font-size: 1.25rem;
+	}
+	
+	.error-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	
+	.error-list li {
+		color: var(--color-danger, #dc3545);
+		padding: 0.25rem 0;
+		padding-left: 2rem;
+		position: relative;
+	}
+	
+	.error-list li:before {
+		content: "•";
+		position: absolute;
+		left: 1rem;
+	}
+	
+	.validation-loading {
+		background: var(--color-info-light, #f0f9ff);
+		border: 1px solid var(--color-info, #0ea5e9);
+		border-radius: 0.5rem;
+		padding: 0.5rem 1rem;
+		margin-bottom: 1rem;
+		color: var(--color-info, #0ea5e9);
+		text-align: center;
+	}
+	
+	.component-error {
+		border-color: var(--color-danger, #dc3545) !important;
+		background: var(--color-danger-light, #fff2f2) !important;
+	}
+	
+	.component-errors {
+		margin-top: 0.25rem;
+	}
+	
+	.error-text {
+		display: block;
+		color: var(--color-danger, #dc3545);
+		font-size: 0.875rem;
+		margin-top: 0.125rem;
 	}
 	
 	/* Layout styles */
