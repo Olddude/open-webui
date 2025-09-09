@@ -36,6 +36,8 @@ class Pipe:
             ".json",
             ".csv",
             ".md",
+            ".html",
+            ".htm",
         ]
 
     def __init__(self):
@@ -77,7 +79,10 @@ class Pipe:
 
         messages = body.get("messages", [])
         if not messages:
-            yield "👨‍🍳 **Chef here!** I don't see any messages. What would you like me to analyze?"
+            yield (
+                "👨‍🍳 **Chef here!** I don't see any messages. "
+                "What would you like me to analyze?"
+            )
             return
 
         last_message = messages[-1]
@@ -87,34 +92,139 @@ class Pipe:
         files = last_message.get("files", [])
 
         if not files:
-            # No files uploaded, provide instructions
-            yield await self.provide_upload_instructions(user_input)
+            # No files uploaded, provide instructions with upload controls
+            yield await self.provide_upload_instructions_with_controls(
+                user_input, __event_emitter__
+            )
             return
 
-        # Process uploaded files
+        # Process uploaded files with progress tracking
         try:
-            yield "👨‍🍳 **Excellent!** I see you've uploaded some documents. Let me put on my chef's hat and analyze them...\n\n"
+            # Emit task start event
+            if __event_emitter__:
+                await __event_emitter__(
+                    {
+                        "type": "task:start",
+                        "data": {
+                            "task_id": "chef_analysis",
+                            "description": "Chef is analyzing your documents",
+                            "status": "processing",
+                        },
+                    }
+                )
+
+            yield (
+                "👨‍🍳 **Excellent!** I see you've uploaded some documents. "
+                "Let me put on my chef's hat and analyze them...\n\n"
+            )
+
+            # Emit progress update
+            if __event_emitter__:
+                await __event_emitter__(
+                    {
+                        "type": "task:update",
+                        "data": {
+                            "task_id": "chef_analysis",
+                            "progress": 25,
+                            "description": "Processing uploaded files",
+                        },
+                    }
+                )
 
             document_contents = []
 
-            for file_info in files:
+            for i, file_info in enumerate(files):
+                # Update progress for each file
+                if __event_emitter__:
+                    progress = 25 + (50 * (i + 1)) // len(files)
+                    await __event_emitter__(
+                        {
+                            "type": "task:update",
+                            "data": {
+                                "task_id": "chef_analysis",
+                                "progress": progress,
+                                "description": (
+                                    f"Processing file: "
+                                    f"{file_info.get('name', 'unknown')}"
+                                ),
+                            },
+                        }
+                    )
+
                 file_content = await self.process_file(file_info)
                 if file_content:
                     document_contents.append(file_content)
 
             if not document_contents:
-                yield "😅 **Chef's note:** I couldn't extract content from the uploaded files. Please make sure they're in a supported format (txt, pdf, doc, docx, json, csv, md)."
+                # Emit task failure
+                if __event_emitter__:
+                    await __event_emitter__(
+                        {
+                            "type": "task:error",
+                            "data": {
+                                "task_id": "chef_analysis",
+                                "error": (
+                                    "No extractable content found in " "uploaded files"
+                                ),
+                            },
+                        }
+                    )
+                yield (
+                    "😅 **Chef's note:** I couldn't extract content from the "
+                    "uploaded files. Please make sure they're in a supported "
+                    "format (txt, pdf, doc, docx, json, csv, md)."
+                )
                 return
+
+            # Update progress for analysis phase
+            if __event_emitter__:
+                await __event_emitter__(
+                    {
+                        "type": "task:update",
+                        "data": {
+                            "task_id": "chef_analysis",
+                            "progress": 75,
+                            "description": (
+                                "Analyzing content with culinary expertise"
+                            ),
+                        },
+                    }
+                )
 
             # Analyze documents with culinary expertise
             analysis = await self.analyze_documents_as_chef(
                 document_contents, user_input
             )
+
+            # Emit task completion
+            if __event_emitter__:
+                await __event_emitter__(
+                    {
+                        "type": "task:complete",
+                        "data": {
+                            "task_id": "chef_analysis",
+                            "progress": 100,
+                            "description": "Analysis complete!",
+                        },
+                    }
+                )
+
             yield analysis
 
         except Exception as e:
             logger.error(f"Error processing documents: {e}")
-            yield f"🍳 **Chef's apology:** I encountered an issue while analyzing your documents: {str(e)}"
+            # Emit task error
+            if __event_emitter__:
+                await __event_emitter__(
+                    {
+                        "type": "task:error",
+                        "data": {"task_id": "chef_analysis", "error": str(e)},
+                    }
+                )
+            yield (
+                f"🍳 **Chef's apology:** I encountered an issue while "
+                f"analyzing your documents: {str(e)}"
+            )
 
     async def provide_upload_instructions(self, user_input: str) -> str:
         """Provide instructions for document upload"""
@@ -122,7 +232,7 @@ class Pipe:
         instructions = """
 👨‍🍳 **Greetings from your Personal Chef!**
 
-I'm here to analyze your documents with a culinary perspective! I can help you with:
+I'm here to analyze your documents with a culinary perspective! I can help with:
 
 🍳 **What I can analyze:**
 - Recipe collections and cookbooks
@@ -135,6 +245,7 @@ I'm here to analyze your documents with a culinary perspective! I can help you w
 
 📁 **Supported file formats:**
 - Text files (.txt, .md)
+- HTML files (.html, .htm)
 - PDFs (.pdf)
 - Word documents (.doc, .docx)
 - JSON data (.json)
@@ -151,12 +262,106 @@ I'm here to analyze your documents with a culinary perspective! I can help you w
 - "Extract cooking times from these recipes"
 - "Help me organize these ingredients by cuisine type"
 
-**Ready when you are!** Upload your documents and I'll give you my chef's analysis! 👨‍🍳✨
+**Ready when you are!** Upload your documents and I'll give you my 
+chef's analysis! 👨‍🍳✨
 """
 
         # If user provided specific input, acknowledge it
         if user_input and user_input.strip():
-            instructions += f'\n\n*I noticed you mentioned: "{user_input}"* - I\'ll keep that in mind when analyzing your documents!'
+            instructions += (
+                f'\n\n*I noticed you mentioned: "{user_input}"* - I\'ll keep '
+                f"that in mind when analyzing your documents!"
+            )
+
+        return instructions
+
+    async def provide_upload_instructions_with_controls(
+        self, user_input: str, event_emitter=None
+    ) -> str:
+        """Provide instructions for document upload with interactive controls"""
+
+        # Emit upload interface event
+        if event_emitter:
+            await event_emitter(
+                {
+                    "type": "upload:interface",
+                    "data": {
+                        "title": "Upload Documents for Chef Analysis",
+                        "description": (
+                            "Select files to analyze with culinary expertise"
+                        ),
+                        "accept": (".txt,.pdf,.doc,.docx,.json,.csv,.md,.html,.htm"),
+                        "multiple": True,
+                        "max_size": "10MB",
+                        "icon": "👨‍🍳",
+                    },
+                }
+            )
+
+        instructions = """
+<div class="chef-upload-interface">
+
+## 👨‍🍳 **Greetings from your Personal Chef!**
+
+I'm here to analyze your documents with a culinary perspective! I can help:
+
+### 🍳 **What I can analyze:**
+- Recipe collections and cookbooks
+- Ingredient lists and nutrition data
+- Menu planning documents
+- Food safety guidelines
+- Restaurant reviews and food blogs
+- Cooking technique guides
+- Dietary requirement documents
+
+### 📁 **Supported file formats:**
+- Text files (.txt, .md)
+- HTML files (.html, .htm)
+- PDFs (.pdf)
+- Word documents (.doc, .docx)
+- JSON data (.json)
+- CSV spreadsheets (.csv)
+
+### 📤 **Upload Interface:**
+<upload-zone
+    accept=".txt,.pdf,.doc,.docx,.json,.csv,.md,.html,.htm"
+    multiple="true"
+    max-size="10MB"
+    title="Drop your culinary documents here"
+    description="Or click to browse and select files">
+
+    <div class="upload-controls">
+        <button class="upload-btn primary">
+            📎 Choose Files
+        </button>
+        <div class="file-info">
+            <span class="format-info">
+                Supported: TXT, PDF, DOC, JSON, CSV, MD
+            </span>
+            <span class="size-limit">Max size: 10MB per file</span>
+        </div>
+    </div>
+</upload-zone>
+
+### 🎯 **Example requests:**
+- "Find all the dessert recipes in this cookbook"
+- "Analyze the nutritional content of this menu"
+- "Extract cooking times from these recipes"
+- "Help me organize these ingredients by cuisine type"
+
+**Ready when you are!** Upload your documents and I'll give you my 
+chef's analysis! 👨‍🍳✨
+
+</div>
+"""
+
+        # If user provided specific input, acknowledge it
+        if user_input and user_input.strip():
+            instructions += (
+                f'\n\n<div class="user-note">*I noticed you mentioned: '
+                f'"{user_input}"* - I\'ll keep that in mind when analyzing '
+                f"your documents!</div>"
+            )
 
         return instructions
 
@@ -226,7 +431,9 @@ I'm here to analyze your documents with a culinary perspective! I can help you w
         combined_docs = "\n".join(doc_summary)
 
         chef_prompt = f"""
-You are a highly experienced and passionate chef with expertise in cuisine from around the world. You have been asked to analyze the following documents with your culinary expertise.
+You are a highly experienced and passionate chef with expertise in cuisine 
+from around the world. You have been asked to analyze the following 
+documents with your culinary expertise.
 
 Please provide a comprehensive analysis from a chef's perspective, focusing on:
 1. Recipe identification and analysis
@@ -236,12 +443,14 @@ Please provide a comprehensive analysis from a chef's perspective, focusing on:
 5. Cuisine types and cultural context
 6. Practical cooking tips and improvements
 
-User's specific request: {user_query if user_query else "General culinary analysis"}
+User's specific request: {user_query if user_query else "General analysis"}
 
 Documents to analyze:
 {combined_docs}
 
-Please respond as an enthusiastic, knowledgeable chef who loves to share culinary wisdom. Use chef emojis and terminology appropriately. Structure your response with clear sections and actionable insights.
+Please respond as an enthusiastic, knowledgeable chef who loves to share 
+culinary wisdom. Use chef emojis and terminology appropriately. Structure 
+your response with clear sections and actionable insights.
 """
 
         try:
@@ -251,7 +460,11 @@ Please respond as an enthusiastic, knowledgeable chef who loves to share culinar
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are a world-class chef and culinary expert. Respond with enthusiasm, expertise, and practical cooking advice.",
+                            "content": (
+                                "You are a world-class chef and culinary "
+                                "expert. Respond with enthusiasm, expertise, "
+                                "and practical cooking advice."
+                            ),
                         },
                         {"role": "user", "content": chef_prompt},
                     ],
@@ -274,7 +487,8 @@ Please respond as an enthusiastic, knowledgeable chef who loves to share culinar
 - Files analyzed: {', '.join([doc['filename'] for doc in documents])}
 - Analysis completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-🍳 **Chef's note:** Feel free to ask follow-up questions about any of the culinary insights I've shared!
+🍳 **Chef's note:** Feel free to ask follow-up questions about any of 
+the culinary insights I've shared!
 """
 
             return final_response
@@ -327,9 +541,10 @@ Please respond as an enthusiastic, knowledgeable chef who loves to share culinar
 
         for doc in documents:
             content_lower = doc["content"].lower()
-            file_types.add(
+            file_ext = (
                 doc["filename"].split(".")[-1] if "." in doc["filename"] else "unknown"
             )
+            file_types.add(file_ext)
 
             found_recipes += sum(
                 1 for keyword in recipe_keywords if keyword in content_lower
@@ -351,18 +566,25 @@ Please respond as an enthusiastic, knowledgeable chef who loves to share culinar
 
 🔍 **Culinary Content Detection:**
 - Recipe-related content: {found_recipes} references found
-- Nutrition information: {found_nutrition} references found  
+- Nutrition information: {found_nutrition} references found
 - Cooking techniques: {found_techniques} references found
 
 📋 **Files Analyzed:**
-{chr(10).join([f"• {doc['filename']} ({len(doc['content'])} chars)" for doc in documents])}
+{chr(10).join([
+    f"• {doc['filename']} ({len(doc['content'])} chars)" 
+    for doc in documents
+])}
 
 🍳 **Chef's Mock Insights:**
-Based on my analysis, your documents appear to contain {"recipe" if found_recipes > 5 else "food-related"} content. Here are my culinary observations:
+Based on my analysis, your documents appear to contain 
+{"recipe" if found_recipes > 5 else "food-related"} content. 
+Here are my culinary observations:
 
 **Recipe Analysis:**
-- I've identified potential recipe content with cooking instructions and ingredient lists
-- The documents seem to focus on {"international cuisine" if len(documents) > 2 else "specific cooking methods"}
+- I've identified potential recipe content with cooking instructions 
+  and ingredient lists
+- The documents seem to focus on 
+  {"international cuisine" if len(documents) > 2 else "specific methods"}
 
 **Cooking Techniques:**
 - Various cooking methods are mentioned throughout the documents
@@ -379,13 +601,20 @@ Based on my analysis, your documents appear to contain {"recipe" if found_recipe
 4. 📖 Keep these documents as reference for future culinary adventures
 
 ---
-⚠️ **Note:** This is a mock analysis. For detailed culinary insights, please configure an OpenAI API key in the settings.
+⚠️ **Note:** This is a mock analysis. For detailed culinary insights, 
+please configure an OpenAI API key in the settings.
 
-🍳 **Chef's note:** Even without AI analysis, I can see you're passionate about cooking! Feel free to ask specific questions about any recipes or techniques you'd like to discuss!
+🍳 **Chef's note:** Even without AI analysis, I can see you're 
+passionate about cooking! Feel free to ask specific questions about 
+any recipes or techniques you'd like to discuss!
 """
 
         if user_query:
-            analysis += f'\n\n**Regarding your specific request:** "{user_query}"\nI would love to provide more detailed insights with full AI analysis capabilities!'
+            analysis += (
+                f'\n\n**Regarding your specific request:** "{user_query}"\n'
+                f"I would love to provide more detailed insights with full "
+                f"AI analysis capabilities!"
+            )
 
         return analysis
 
@@ -453,7 +682,10 @@ Bake time: 9-11 minutes
         "messages": [
             {
                 "role": "user",
-                "content": "Please analyze these recipe documents and give me your chef's perspective",
+                "content": (
+                    "Please analyze these recipe documents and give me "
+                    "your chef's perspective"
+                ),
                 "files": example_files,
             }
         ]
