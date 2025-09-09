@@ -176,7 +176,7 @@ services:
       - KC_DB_USERNAME=${POSTGRES_USER:-admin}
       - KC_DB_PASSWORD=${POSTGRES_PASSWORD:-password}
     ports:
-      - '8080:8080'
+      - '8084:8080'
     command: [start-dev]
     networks:
       - local-bridge-network
