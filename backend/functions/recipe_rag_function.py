@@ -219,3 +219,82 @@ Total items processed: {len(json_result.get('recipes', []))}
                 "processing_mode": "mock",
             },
         }
+
+
+async def main():
+    """Main handler for testing the recipe RAG function with examples"""
+
+    # Example recipe input data
+    example_recipe_input = """
+    Chocolate Chip Cookies
+    
+    Ingredients:
+    - 2 1/4 cups all-purpose flour
+    - 1 tsp baking soda
+    - 1 tsp salt
+    - 1 cup butter, softened
+    - 3/4 cup granulated sugar
+    - 3/4 cup packed brown sugar
+    - 2 large eggs
+    - 2 tsp vanilla extract
+    - 2 cups chocolate chips
+    
+    Instructions:
+    1. Preheat oven to 375°F (190°C)
+    2. Mix flour, baking soda and salt in a bowl
+    3. Beat butter, sugars, eggs and vanilla in large bowl until creamy
+    4. Gradually beat in flour mixture
+    5. Stir in chocolate chips
+    6. Drop rounded tablespoons onto ungreased cookie sheets
+    7. Bake 9-11 minutes or until golden brown
+    8. Cool on baking sheet for 2 minutes
+    """
+
+    # Example body structure that would be passed to the pipe function
+    example_body = {"messages": [{"role": "user", "content": example_recipe_input}]}
+
+    # Example user metadata
+    example_user = {"id": "test_user", "name": "Test User"}
+
+    # Example metadata
+    example_metadata = {
+        "request_id": "test_123",
+        "timestamp": datetime.now().isoformat(),
+    }
+
+    print("🍪 Recipe RAG Function Test")
+    print("=" * 50)
+    print(f"Input Recipe:\n{example_recipe_input}")
+    print("\n" + "=" * 50)
+
+    # Initialize the Pipe class
+    pipe_instance = Pipe()
+
+    # Call startup
+    await pipe_instance.on_startup()
+
+    print("Processing recipe data...")
+    print("=" * 50)
+
+    # Process the recipe using the pipe function
+    result_chunks = []
+    async for chunk in pipe_instance.pipe(
+        body=example_body, __user__=example_user, __metadata__=example_metadata
+    ):
+        result_chunks.append(chunk)
+
+    # Print the complete result
+    full_result = "".join(result_chunks)
+    print(full_result)
+
+    print("\n" + "=" * 50)
+    print("Test completed successfully! ✅")
+
+    # Call shutdown
+    await pipe_instance.on_shutdown()
+
+
+if __name__ == "__main__":
+    """Entry point when running the script directly"""
+    print("Starting Recipe RAG Function Test...")
+    asyncio.run(main())
