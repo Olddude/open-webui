@@ -2,12 +2,13 @@
 title: Chef's Document Analyzer
 author: Open WebUI
 description: Your personal chef that analyzes uploaded documents for culinary insights, recipes, and food-related content
-requirements: openai, python-magic, pypdf2, python-docx, openpyxl
+requirements: openai, python-magic, pypdf2, python-docx, openpyxl, pyyaml
 """
 
 from typing import Dict, Any, Optional, AsyncGenerator, List
 import asyncio
 import json
+import yaml
 import os
 import logging
 import io
@@ -100,15 +101,44 @@ class Pipe:
 
         # Process uploaded files with progress tracking
         try:
-            # Emit task start event
+            # Emit UI form with progress component
             if __event_emitter__:
                 await __event_emitter__(
                     {
-                        "type": "task:start",
+                        "type": "ui:agent_form",
                         "data": {
-                            "task_id": "chef_analysis",
-                            "description": "Chef is analyzing your documents",
-                            "status": "processing",
+                            "version": "1.0.0",
+                            "type": "ui-agent-form",
+                            "metadata": {
+                                "title": "Document Analysis Progress",
+                                "agent": "chef_document_analyzer",
+                                "timestamp": datetime.now().isoformat(),
+                                "sessionId": "chef_analysis",
+                            },
+                            "components": [
+                                {
+                                    "id": "progress_container",
+                                    "type": "container",
+                                    "layout": "vertical",
+                                    "children": [
+                                        {
+                                            "id": "progress_title",
+                                            "type": "text",
+                                            "content": "👨‍🍳 Analyzing your documents...",
+                                            "variant": "h3",
+                                        },
+                                        {
+                                            "id": "progress_bar",
+                                            "type": "progress",
+                                            "value": 0,
+                                            "label": "Initializing analysis",
+                                            "variant": "linear",
+                                            "color": "primary",
+                                            "showPercentage": True,
+                                        },
+                                    ],
+                                }
+                            ],
                         },
                     }
                 )
@@ -118,15 +148,22 @@ class Pipe:
                 "Let me put on my chef's hat and analyze them...\n\n"
             )
 
-            # Emit progress update
+            # Emit progress update UI form
             if __event_emitter__:
                 await __event_emitter__(
                     {
-                        "type": "task:update",
+                        "type": "ui:update_form",
                         "data": {
-                            "task_id": "chef_analysis",
-                            "progress": 25,
-                            "description": "Processing uploaded files",
+                            "sessionId": "chef_analysis",
+                            "updates": [
+                                {
+                                    "id": "progress_bar",
+                                    "properties": {
+                                        "value": 25,
+                                        "label": "Processing uploaded files",
+                                    },
+                                }
+                            ],
                         },
                     }
                 )
@@ -139,14 +176,18 @@ class Pipe:
                     progress = 25 + (50 * (i + 1)) // len(files)
                     await __event_emitter__(
                         {
-                            "type": "task:update",
+                            "type": "ui:update_form",
                             "data": {
-                                "task_id": "chef_analysis",
-                                "progress": progress,
-                                "description": (
-                                    f"Processing file: "
-                                    f"{file_info.get('name', 'unknown')}"
-                                ),
+                                "sessionId": "chef_analysis",
+                                "updates": [
+                                    {
+                                        "id": "progress_bar",
+                                        "properties": {
+                                            "value": progress,
+                                            "label": f"Processing file: {file_info.get('name', 'unknown')}",
+                                        },
+                                    }
+                                ],
                             },
                         }
                     )
@@ -180,13 +221,18 @@ class Pipe:
             if __event_emitter__:
                 await __event_emitter__(
                     {
-                        "type": "task:update",
+                        "type": "ui:update_form",
                         "data": {
-                            "task_id": "chef_analysis",
-                            "progress": 75,
-                            "description": (
-                                "Analyzing content with culinary expertise"
-                            ),
+                            "sessionId": "chef_analysis",
+                            "updates": [
+                                {
+                                    "id": "progress_bar",
+                                    "properties": {
+                                        "value": 75,
+                                        "label": "Analyzing content with culinary expertise",
+                                    },
+                                }
+                            ],
                         },
                     }
                 )
@@ -196,15 +242,30 @@ class Pipe:
                 document_contents, user_input
             )
 
-            # Emit task completion
+            # Emit task completion with success alert
             if __event_emitter__:
                 await __event_emitter__(
                     {
-                        "type": "task:complete",
+                        "type": "ui:agent_form",
                         "data": {
-                            "task_id": "chef_analysis",
-                            "progress": 100,
-                            "description": "Analysis complete!",
+                            "version": "1.0.0",
+                            "type": "ui-agent-form",
+                            "metadata": {
+                                "title": "Analysis Complete",
+                                "agent": "chef_document_analyzer",
+                                "timestamp": datetime.now().isoformat(),
+                                "sessionId": "chef_analysis_complete",
+                            },
+                            "components": [
+                                {
+                                    "id": "success_alert",
+                                    "type": "alert",
+                                    "message": "Analysis complete! Your culinary document analysis is ready below.",
+                                    "variant": "success",
+                                    "title": "👨‍🍳 Chef's Analysis Ready",
+                                    "icon": True,
+                                }
+                            ],
                         },
                     }
                 )
@@ -280,90 +341,187 @@ chef's analysis! 👨‍🍳✨
     ) -> str:
         """Provide instructions for document upload with interactive controls"""
 
-        # Emit upload interface event
+        # Emit UI agent form event matching the schema
         if event_emitter:
             await event_emitter(
                 {
-                    "type": "upload:interface",
+                    "type": "ui:agent_form",
                     "data": {
-                        "title": "Upload Documents for Chef Analysis",
-                        "description": (
-                            "Select files to analyze with culinary expertise"
-                        ),
-                        "accept": (".txt,.pdf,.doc,.docx,.json,.csv,.md,.html,.htm"),
-                        "multiple": True,
-                        "max_size": "10MB",
-                        "icon": "👨‍🍳",
+                        "version": "1.0.0",
+                        "type": "ui-agent-form",
+                        "metadata": {
+                            "title": "Chef Document Analyzer",
+                            "description": "Upload and analyze culinary documents",
+                            "agent": "chef_document_analyzer",
+                            "timestamp": datetime.now().isoformat(),
+                            "capabilities": [
+                                "file_upload",
+                                "document_analysis",
+                                "recipe_extraction",
+                            ],
+                        },
+                        "layout": {"type": "single", "responsive": True},
+                        "components": [
+                            {
+                                "id": "chef_header",
+                                "type": "container",
+                                "layout": "vertical",
+                                "className": "chef-header",
+                                "children": [
+                                    {
+                                        "id": "title",
+                                        "type": "text",
+                                        "content": "👨‍🍳 **Greetings from your Personal Chef!**",
+                                        "variant": "h2",
+                                    },
+                                    {
+                                        "id": "subtitle",
+                                        "type": "text",
+                                        "content": "I'm here to analyze your documents with a culinary perspective!",
+                                        "variant": "body",
+                                    },
+                                ],
+                            },
+                            {
+                                "id": "capabilities_section",
+                                "type": "container",
+                                "layout": "columns",
+                                "columns": 2,
+                                "gap": "1rem",
+                                "children": [
+                                    {
+                                        "id": "what_i_analyze",
+                                        "type": "container",
+                                        "layout": "vertical",
+                                        "children": [
+                                            {
+                                                "id": "analyze_title",
+                                                "type": "text",
+                                                "content": "🍳 **What I can analyze:**",
+                                                "variant": "h4",
+                                            },
+                                            {
+                                                "id": "analyze_list",
+                                                "type": "markdown",
+                                                "content": "- Recipe collections and cookbooks\\n- Ingredient lists and nutrition data\\n- Menu planning documents\\n- Food safety guidelines\\n- Restaurant reviews and food blogs\\n- Cooking technique guides\\n- Dietary requirement documents",
+                                            },
+                                        ],
+                                    },
+                                    {
+                                        "id": "file_formats",
+                                        "type": "container",
+                                        "layout": "vertical",
+                                        "children": [
+                                            {
+                                                "id": "formats_title",
+                                                "type": "text",
+                                                "content": "📁 **Supported file formats:**",
+                                                "variant": "h4",
+                                            },
+                                            {
+                                                "id": "formats_list",
+                                                "type": "markdown",
+                                                "content": "- Text files (.txt, .md)\\n- HTML files (.html, .htm)\\n- PDFs (.pdf)\\n- Word documents (.doc, .docx)\\n- JSON data (.json)\\n- CSV spreadsheets (.csv)",
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            {
+                                "id": "upload_section",
+                                "type": "container",
+                                "layout": "vertical",
+                                "className": "upload-section",
+                                "style": {"marginTop": "2rem"},
+                                "children": [
+                                    {
+                                        "id": "upload_title",
+                                        "type": "text",
+                                        "content": "📤 **Upload Your Documents**",
+                                        "variant": "h3",
+                                    },
+                                    {
+                                        "id": "file_uploader",
+                                        "type": "fileUpload",
+                                        "label": "Drop your culinary documents here or click to browse",
+                                        "accept": ".txt,.pdf,.doc,.docx,.json,.csv,.md,.html,.htm",
+                                        "multiple": True,
+                                        "maxSize": "10MB",
+                                        "dragDrop": True,
+                                        "showPreview": True,
+                                    },
+                                ],
+                            },
+                            {
+                                "id": "examples_section",
+                                "type": "container",
+                                "layout": "vertical",
+                                "className": "examples-section",
+                                "style": {"marginTop": "1.5rem"},
+                                "children": [
+                                    {
+                                        "id": "examples_title",
+                                        "type": "text",
+                                        "content": "🎯 **Example requests:**",
+                                        "variant": "h4",
+                                    },
+                                    {
+                                        "id": "examples_grid",
+                                        "type": "container",
+                                        "layout": "grid",
+                                        "columns": 2,
+                                        "gap": "0.5rem",
+                                        "children": [
+                                            {
+                                                "id": "example_1",
+                                                "type": "badge",
+                                                "label": "Find all dessert recipes",
+                                                "variant": "info",
+                                            },
+                                            {
+                                                "id": "example_2",
+                                                "type": "badge",
+                                                "label": "Analyze nutritional content",
+                                                "variant": "success",
+                                            },
+                                            {
+                                                "id": "example_3",
+                                                "type": "badge",
+                                                "label": "Extract cooking times",
+                                                "variant": "warning",
+                                            },
+                                            {
+                                                "id": "example_4",
+                                                "type": "badge",
+                                                "label": "Organize by cuisine type",
+                                                "variant": "primary",
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            {
+                                "id": "footer_message",
+                                "type": "alert",
+                                "message": "Ready when you are! Upload your documents and I'll give you my chef's analysis! 👨‍🍳✨",
+                                "variant": "info",
+                                "icon": True,
+                            },
+                        ],
+                        "state": {"uploadedFiles": []},
+                        "actions": {
+                            "onFileUpload": {
+                                "type": "emit",
+                                "handler": "handleFileUpload",
+                                "params": {"eventName": "files:uploaded"},
+                            }
+                        },
                     },
                 }
             )
 
-        instructions = """
-<div class="chef-upload-interface">
-
-## 👨‍🍳 **Greetings from your Personal Chef!**
-
-I'm here to analyze your documents with a culinary perspective! I can help:
-
-### 🍳 **What I can analyze:**
-- Recipe collections and cookbooks
-- Ingredient lists and nutrition data
-- Menu planning documents
-- Food safety guidelines
-- Restaurant reviews and food blogs
-- Cooking technique guides
-- Dietary requirement documents
-
-### 📁 **Supported file formats:**
-- Text files (.txt, .md)
-- HTML files (.html, .htm)
-- PDFs (.pdf)
-- Word documents (.doc, .docx)
-- JSON data (.json)
-- CSV spreadsheets (.csv)
-
-### 📤 **Upload Interface:**
-<upload-zone
-    accept=".txt,.pdf,.doc,.docx,.json,.csv,.md,.html,.htm"
-    multiple="true"
-    max-size="10MB"
-    title="Drop your culinary documents here"
-    description="Or click to browse and select files">
-
-    <div class="upload-controls">
-        <button class="upload-btn primary">
-            📎 Choose Files
-        </button>
-        <div class="file-info">
-            <span class="format-info">
-                Supported: TXT, PDF, DOC, JSON, CSV, MD
-            </span>
-            <span class="size-limit">Max size: 10MB per file</span>
-        </div>
-    </div>
-</upload-zone>
-
-### 🎯 **Example requests:**
-- "Find all the dessert recipes in this cookbook"
-- "Analyze the nutritional content of this menu"
-- "Extract cooking times from these recipes"
-- "Help me organize these ingredients by cuisine type"
-
-**Ready when you are!** Upload your documents and I'll give you my 
-chef's analysis! 👨‍🍳✨
-
-</div>
-"""
-
-        # If user provided specific input, acknowledge it
-        if user_input and user_input.strip():
-            instructions += (
-                f'\n\n<div class="user-note">*I noticed you mentioned: '
-                f'"{user_input}"* - I\'ll keep that in mind when analyzing '
-                f"your documents!</div>"
-            )
-
-        return instructions
+        # Return a simple text message for fallback
+        return "Please upload your culinary documents using the interface above. I'm ready to analyze them with my chef's expertise! 👨‍🍳"
 
     async def process_file(self, file_info: dict) -> Optional[Dict[str, Any]]:
         """Process uploaded file and extract content"""
