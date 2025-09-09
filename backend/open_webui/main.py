@@ -519,11 +519,6 @@ async def lifespan(app: FastAPI):
     log.info("Installing external dependencies of functions and tools...")
     install_tool_and_function_dependencies()
 
-    # Load workspace functions for debugging support (allows breakpoints to work)
-    from open_webui.utils.function_loader import load_workspace_functions_for_debugging
-
-    load_workspace_functions_for_debugging(app)
-
     app.state.redis = get_redis_connection(
         redis_url=REDIS_URL,
         redis_sentinels=get_sentinels_from_env(
