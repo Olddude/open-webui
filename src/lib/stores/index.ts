@@ -98,7 +98,12 @@ const initialAgentState: AgentState = {
 	showReasoningPanel: true,
 	showTaskPanel: true,
 	showArtifactsPanel: true,
-	showPanel: false // Default to closed
+	showPanel: false, // Default to closed
+	activity: {
+		status: 'idle',
+		currentTask: null
+	},
+	logs: []
 };
 
 export const agentState: Writable<AgentState> = writable(initialAgentState);
@@ -292,6 +297,103 @@ export const toggleAgenticMode = () => {
 
 export const resetAgentState = () => {
 	agentState.set(initialAgentState);
+};
+
+// Load test data for agent activity
+export const loadAgentActivityTestData = () => {
+	agentState.update((state) => ({
+		...state,
+		activity: {
+			status: 'active',
+			currentTask: 'Analyzing code structure and dependencies'
+		},
+		logs: [
+			{
+				id: 'log-1',
+				type: 'info',
+				message: 'Agent initialized successfully',
+				timestamp: new Date(Date.now() - 120000)
+			},
+			{
+				id: 'log-2',
+				type: 'success',
+				message: 'Connected to language model',
+				timestamp: new Date(Date.now() - 110000)
+			},
+			{
+				id: 'log-3',
+				type: 'info',
+				message: 'Starting code analysis',
+				timestamp: new Date(Date.now() - 100000)
+			},
+			{
+				id: 'log-4',
+				type: 'warning',
+				message: 'Large file detected, processing may take longer',
+				timestamp: new Date(Date.now() - 90000)
+			},
+			{
+				id: 'log-5',
+				type: 'success',
+				message: 'Successfully parsed 42 files',
+				timestamp: new Date(Date.now() - 60000)
+			},
+			{
+				id: 'log-6',
+				type: 'info',
+				message: 'Building dependency graph',
+				timestamp: new Date(Date.now() - 30000)
+			},
+			{
+				id: 'log-7',
+				type: 'error',
+				message: 'Failed to resolve module: @unknown/package',
+				timestamp: new Date(Date.now() - 20000)
+			},
+			{
+				id: 'log-8',
+				type: 'info',
+				message: 'Continuing with partial analysis',
+				timestamp: new Date(Date.now() - 10000)
+			},
+			{
+				id: 'log-9',
+				type: 'success',
+				message: 'Analysis complete - found 3 optimization opportunities',
+				timestamp: new Date()
+			}
+		]
+	}));
+};
+
+// Update agent activity status
+export const updateAgentActivity = (
+	status: 'idle' | 'active' | 'processing',
+	currentTask: string | null = null
+) => {
+	agentState.update((state) => ({
+		...state,
+		activity: {
+			status,
+			currentTask
+		}
+	}));
+};
+
+// Add a log entry to agent
+export const addAgentLog = (type: 'info' | 'warning' | 'error' | 'success', message: string) => {
+	agentState.update((state) => ({
+		...state,
+		logs: [
+			...state.logs.slice(-99), // Keep last 100 logs
+			{
+				id: `log-${Date.now()}`,
+				type,
+				message,
+				timestamp: new Date()
+			}
+		]
+	}));
 };
 
 export const loadDemoData = () => {
@@ -994,6 +1096,16 @@ export interface AgentState {
 	showTaskPanel: boolean;
 	showArtifactsPanel: boolean;
 	showPanel: boolean; // Main agent panel visibility
+	activity: {
+		status: 'idle' | 'active' | 'processing';
+		currentTask: string | null;
+	};
+	logs: Array<{
+		id: string;
+		type: 'info' | 'warning' | 'error' | 'success';
+		message: string;
+		timestamp: Date;
+	}>;
 }
 
 // Task Queue Types
