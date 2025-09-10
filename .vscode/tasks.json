@@ -6,16 +6,6 @@
 			"type": "shell",
 			"command": "source .venv/bin/activate",
 			"args": [],
-			"presentation": {
-				"reveal": "always",
-				"panel": "shared"
-			}
-		},
-		{
-			"label": "npm_build",
-			"type": "shell",
-			"command": "npm",
-			"args": ["run build"],
 			"options": {
 				"cwd": "${workspaceFolder}",
 				"env": {},
@@ -23,6 +13,10 @@
 					"executable": "bash",
 					"args": ["-c"]
 				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
 			}
 		}
 	]
