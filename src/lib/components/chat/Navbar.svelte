@@ -15,6 +15,7 @@
 		temporaryChatEnabled,
 		user
 	} from '$lib/stores';
+	import { agentState } from '$lib/stores/agentState';
 
 	import { slide } from 'svelte/transition';
 	import { page } from '$app/stores';
@@ -26,9 +27,7 @@
 	import UserMenu from '$lib/components/layout/Sidebar/UserMenu.svelte';
 	import MenuLines from '../icons/MenuLines.svelte';
 	import AdjustmentsHorizontal from '../icons/AdjustmentsHorizontal.svelte';
-	import { FileText } from 'lucide-svelte';
-	import { agentState, togglePanel } from '$lib/stores/agentState';
-	import ArtifactsPanel from '../chat/ArtifactsPanel.svelte';
+	import { Activity } from 'lucide-svelte';
 
 	import PencilSquare from '../icons/PencilSquare.svelte';
 	import Banner from '../common/Banner.svelte';
@@ -169,16 +168,19 @@
 					</Tooltip>
 
 					{#if $agentState.isAgenticMode}
-						<Tooltip content="Generated Artifacts">
+						<Tooltip content="Agent Activity">
 							<button
-								class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition {$agentState.showArtifactsPanel ? 'bg-gray-50 dark:bg-gray-850' : ''}"
+								class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition {$agentState.showPanel ? 'bg-gray-100 dark:bg-gray-800' : ''}"
 								on:click={() => {
-									togglePanel('artifacts');
+									agentState.update(state => ({
+										...state,
+										showPanel: !state.showPanel
+									}));
 								}}
-								aria-label="Generated Artifacts"
+								aria-label="Agent Activity"
 							>
 								<div class=" m-auto self-center">
-									<FileText class="size-5" strokeWidth="1.5" />
+									<Activity className=" size-5" strokeWidth="1.5" />
 								</div>
 							</button>
 						</Tooltip>
@@ -296,12 +298,3 @@
 		{/if}
 	</div>
 </nav>
-
-<!-- Artifacts Panel Drawer -->
-{#if $agentState.isAgenticMode && $agentState.showArtifactsPanel}
-	<div 
-		class="fixed top-0 right-0 h-screen w-[400px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-lg z-40 transform transition-transform duration-300 ease-in-out"
-	>
-		<ArtifactsPanel />
-	</div>
-{/if}

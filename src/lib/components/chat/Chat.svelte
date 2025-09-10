@@ -39,6 +39,7 @@
 		toolServers,
 		selectedFolder
 	} from '$lib/stores';
+	import { agentState } from '$lib/stores/agentState';
 	import {
 		convertMessagesToHistory,
 		copyToClipboard,
@@ -83,6 +84,7 @@
 	import Messages from '$lib/components/chat/Messages.svelte';
 	import Navbar from '$lib/components/chat/Navbar.svelte';
 	import ChatControls from './ChatControls.svelte';
+	import AgentControls from './AgentControls.svelte';
 	import EventConfirmDialog from '../common/ConfirmDialog.svelte';
 	import Placeholder from './Placeholder.svelte';
 	import NotificationToast from '../NotificationToast.svelte';
@@ -96,6 +98,8 @@
 	const eventTarget = new EventTarget();
 	let controlPane;
 	let controlPaneComponent;
+	let agentPane;
+	let agentPaneComponent;
 
 	let messageInput;
 
@@ -518,6 +522,20 @@
 				showCallOverlay.set(false);
 				showOverview.set(false);
 				showArtifacts.set(false);
+			}
+		});
+
+		agentState.subscribe(async (state) => {
+			if (agentPane && !$mobile) {
+				try {
+					if (state.showPanel) {
+						agentPaneComponent.openPane();
+					} else {
+						agentPane.collapse();
+					}
+				} catch (e) {
+					// ignore
+				}
 			}
 		});
 
@@ -2266,6 +2284,11 @@
 					{stopResponse}
 					{showMessage}
 					{eventTarget}
+				/>
+
+				<AgentControls
+					bind:this={agentPaneComponent}
+					bind:pane={agentPane}
 				/>
 			</PaneGroup>
 		</div>

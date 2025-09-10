@@ -58,6 +58,7 @@ export interface AgentState {
 	showReasoningPanel: boolean;
 	showTaskPanel: boolean;
 	showArtifactsPanel: boolean;
+	showPanel: boolean; // Main agent panel visibility
 }
 
 const initialState: AgentState = {
@@ -70,7 +71,8 @@ const initialState: AgentState = {
 	artifacts: [],
 	showReasoningPanel: true,
 	showTaskPanel: true,
-	showArtifactsPanel: true
+	showArtifactsPanel: true,
+	showPanel: false // Default to closed
 };
 
 export const agentState: Writable<AgentState> = writable(initialState);
@@ -78,61 +80,59 @@ export const agentState: Writable<AgentState> = writable(initialState);
 // Derived stores for specific views
 export const activeTasksCount = derived(
 	agentState,
-	$state => $state.activeTasks.filter(t => t.status === 'executing').length
+	($state) => $state.activeTasks.filter((t) => t.status === 'executing').length
 );
 
 export const completedTasksCount = derived(
 	agentState,
-	$state => $state.taskHistory.filter(t => t.status === 'completed').length
+	($state) => $state.taskHistory.filter((t) => t.status === 'completed').length
 );
 
 export const currentReasoningSteps = derived(
 	agentState,
-	$state => $state.reasoningChain.slice(-10) // Last 10 reasoning steps
+	($state) => $state.reasoningChain.slice(-10) // Last 10 reasoning steps
 );
 
 // Actions
 export const addTask = (task: Task) => {
-	agentState.update(state => ({
+	agentState.update((state) => ({
 		...state,
 		activeTasks: [...state.activeTasks, task]
 	}));
 };
 
 export const updateTaskStatus = (taskId: string, status: Task['status'], progress?: number) => {
-	agentState.update(state => ({
+	agentState.update((state) => ({
 		...state,
-		activeTasks: state.activeTasks.map(task =>
-			task.id === taskId 
-				? { ...task, status, progress: progress ?? task.progress }
-				: task
+		activeTasks: state.activeTasks.map((task) =>
+			task.id === taskId ? { ...task, status, progress: progress ?? task.progress } : task
 		)
 	}));
 };
 
 export const completeTask = (taskId: string, result?: any) => {
-	agentState.update(state => {
-		const task = state.activeTasks.find(t => t.id === taskId);
+	agentState.update((state) => {
+		const task = state.activeTasks.find((t) => t.id === taskId);
 		if (!task) return state;
-		
-		const completedTask = { 
-			...task, 
-			status: 'completed' as const, 
+
+		const completedTask = {
+			...task,
+			status: 'completed' as const,
 			progress: 100,
 			endTime: new Date(),
-			result 
+			result
 		};
-		
+
 		return {
 			...state,
-			activeTasks: state.activeTasks.filter(t => t.id !== taskId),
+			activeTasks: state.activeTasks.filter((t) => t.id !== taskId),
 			taskHistory: [...state.taskHistory, completedTask]
 		};
 	});
 };
 
 export const addReasoningStep = (step: ReasoningStep) => {
-	agentState.update(state => ({
+	agentState.update((state) => ({
 		...state,
 		reasoningChain: [...state.reasoningChain, step]
 	}));
@@ -146,40 +146,40 @@ export const startParallelExecution = (tasks: Task[]) => {
 		status: 'running',
 		syncPoints: []
 	};
-	
-	agentState.update(state => ({
+
+	agentState.update((state) => ({
 		...state,
 		parallelExecutions: [...state.parallelExecutions, execution]
 	}));
-	
+
 	return execution.id;
 };
 
 export const addArtifact = (artifact: Artifact) => {
-	agentState.update(state => ({
+	agentState.update((state) => ({
 		...state,
 		artifacts: [...state.artifacts, artifact]
 	}));
 };
 
 export const updateArtifact = (artifactId: string, content: string) => {
-	agentState.update(state => ({
+	agentState.update((state) => ({
 		...state,
-		artifacts: state.artifacts.map(artifact =>
+		artifacts: state.artifacts.map((artifact) =>
 			artifact.id === artifactId
-				? { 
-					...artifact, 
-					content, 
-					version: artifact.version + 1,
-					modifiedAt: new Date()
-				}
+				? {
+						...artifact,
+						content,
+						version: artifact.version + 1,
+						modifiedAt: new Date()
+					}
 				: artifact
 		)
 	}));
 };
 
 export const togglePanel = (panel: 'reasoning' | 'task' | 'artifacts') => {
-	agentState.update(state => {
+	agentState.update((state) => {
 		const key = `show${panel.charAt(0).toUpperCase() + panel.slice(1)}Panel` as keyof AgentState;
 		return {
 			...state,
@@ -189,7 +189,7 @@ export const togglePanel = (panel: 'reasoning' | 'task' | 'artifacts') => {
 };
 
 export const toggleAgenticMode = () => {
-	agentState.update(state => ({
+	agentState.update((state) => ({
 		...state,
 		isAgenticMode: !state.isAgenticMode
 	}));
@@ -213,7 +213,7 @@ export const loadDemoData = () => {
 			endTime: new Date(Date.now() - 20000)
 		},
 		{
-			id: 'task-2', 
+			id: 'task-2',
 			title: 'Design System Architecture',
 			description: 'Creating a scalable architecture plan',
 			status: 'executing',
@@ -224,7 +224,7 @@ export const loadDemoData = () => {
 		},
 		{
 			id: 'task-3',
-			title: 'Implement Core Features', 
+			title: 'Implement Core Features',
 			description: 'Build the main functionality',
 			status: 'pending',
 			progress: 0,
@@ -237,21 +237,24 @@ export const loadDemoData = () => {
 		{
 			id: 'reason-1',
 			type: 'thinking',
-			content: 'The user is asking for a complex system that requires careful planning. I need to break this down into manageable steps.',
+			content:
+				'The user is asking for a complex system that requires careful planning. I need to break this down into manageable steps.',
 			timestamp: new Date(Date.now() - 60000),
 			confidence: 0.9
 		},
 		{
 			id: 'reason-2',
 			type: 'analysis',
-			content: 'Looking at the requirements, I can identify three main areas: data processing, user interface, and integration layer.',
+			content:
+				'Looking at the requirements, I can identify three main areas: data processing, user interface, and integration layer.',
 			timestamp: new Date(Date.now() - 45000),
 			confidence: 0.85
 		},
 		{
 			id: 'reason-3',
 			type: 'strategy',
-			content: 'I\'ll use an incremental approach, starting with core functionality and building up complexity.',
+			content:
+				"I'll use an incremental approach, starting with core functionality and building up complexity.",
 			timestamp: new Date(Date.now() - 30000),
 			confidence: 0.8,
 			alternatives: ['Waterfall approach', 'Parallel development'],
@@ -299,7 +302,7 @@ if __name__ == "__main__":
 			modifiedAt: new Date(Date.now() - 120000)
 		},
 		{
-			id: 'artifact-2', 
+			id: 'artifact-2',
 			type: 'document',
 			title: 'Architecture Plan',
 			content: `# System Architecture Plan
@@ -334,7 +337,7 @@ This document outlines the proposed architecture for the new system.
 		}
 	];
 
-	agentState.update(state => ({
+	agentState.update((state) => ({
 		...state,
 		activeTasks: demoTasks,
 		reasoningChain: demoReasoning,
