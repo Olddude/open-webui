@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Task } from '$lib/stores/agentState';
+	import type { Task } from '$lib/stores';
 	import { CheckCircle, Circle, Clock, AlertCircle, Loader } from 'lucide-svelte';
 	
 	export let tasks: Task[] = [];

@@ -4,7 +4,7 @@
 
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { mobile } from '$lib/stores';
-	import { agentState } from '$lib/stores/agentState';
+	import { agentState } from '$lib/stores';
 
 	import AgentPanel from './AgentPanel.svelte';
 

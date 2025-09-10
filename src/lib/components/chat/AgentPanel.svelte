@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { agentState, togglePanel, loadDemoData, resetAgentState } from '$lib/stores/agentState';
-	import { taskQueue } from '$lib/stores/taskQueue';
+	import { agentState, taskQueue, toolUsage, togglePanel, loadDemoData, resetAgentState, activeTasksCount, queueProgress, activeToolsCount } from '$lib/stores';
 	import TaskPlanning from './Messages/TaskPlanning.svelte';
 	import ReasoningDisplay from './Messages/ReasoningDisplay.svelte';
 	import TaskMonitor from './Messages/TaskMonitor.svelte';

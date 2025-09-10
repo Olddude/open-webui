@@ -39,7 +39,7 @@
 		toolServers,
 		selectedFolder
 	} from '$lib/stores';
-	import { agentState } from '$lib/stores/agentState';
+	import { agentState } from '$lib/stores';
 	import {
 		convertMessagesToHistory,
 		copyToClipboard,

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { agentState, togglePanel } from '$lib/stores/agentState';
+	import { agentState, togglePanel } from '$lib/stores';
 	import { File, Code, FileText, Image, Download, ExternalLink, Copy, Check, X } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	

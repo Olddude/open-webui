@@ -15,7 +15,7 @@
 		temporaryChatEnabled,
 		user
 	} from '$lib/stores';
-	import { agentState } from '$lib/stores/agentState';
+	import { agentState } from '$lib/stores';
 
 	import { slide } from 'svelte/transition';
 	import { page } from '$app/stores';

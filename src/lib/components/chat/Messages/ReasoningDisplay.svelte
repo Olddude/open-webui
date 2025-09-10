@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ReasoningStep } from '$lib/stores/agentState';
+	import type { ReasoningStep } from '$lib/stores';
 	import { Brain, Lightbulb, Target, TrendingUp, ChevronDown, ChevronRight } from 'lucide-svelte';
 	
 	export let steps: ReasoningStep[] = [];
