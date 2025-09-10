@@ -17,6 +17,7 @@ export default defineConfig({
 		})
 	],
 	server: {
+		allowedHosts: ['localhost', '192.168.178.121', 'universe'],
 		fs: {
 			allow: ['..', 'node_modules']
 		}

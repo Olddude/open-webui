@@ -82,8 +82,6 @@
 		"@tiptap/pm": "^2.11.7",
 		"@tiptap/starter-kit": "^2.10.0",
 		"@xyflow/svelte": "^0.1.19",
-		"ajv": "^8.17.1",
-		"ajv-formats": "^3.0.1",
 		"async": "^3.2.5",
 		"bits-ui": "^0.21.15",
 		"chart.js": "^4.5.0",
