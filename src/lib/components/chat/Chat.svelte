@@ -96,10 +96,9 @@
 	let loading = true;
 
 	const eventTarget = new EventTarget();
-	let controlPane;
-	let controlPaneComponent;
-	let agentPane;
-	let agentPaneComponent;
+	let sidePane;
+	let sidePaneComponent;
+	let activePanelType = null; // 'controls' or 'agent'
 
 	let messageInput;
 
@@ -506,12 +505,14 @@
 		}
 
 		showControls.subscribe(async (value) => {
-			if (controlPane && !$mobile) {
+			if (sidePane && !$mobile) {
 				try {
 					if (value) {
-						controlPaneComponent.openPane();
-					} else {
-						controlPane.collapse();
+						activePanelType = 'controls';
+						sidePaneComponent.openPane();
+					} else if (activePanelType === 'controls') {
+						sidePane.collapse();
+						activePanelType = null;
 					}
 				} catch (e) {
 					// ignore
@@ -526,12 +527,14 @@
 		});
 
 		agentState.subscribe(async (state) => {
-			if (agentPane && !$mobile) {
+			if (sidePane && !$mobile) {
 				try {
 					if (state.showPanel) {
-						agentPaneComponent.openPane();
-					} else {
-						agentPane.collapse();
+						activePanelType = 'agent';
+						sidePaneComponent.openPane();
+					} else if (activePanelType === 'agent') {
+						sidePane.collapse();
+						activePanelType = null;
 					}
 				} catch (e) {
 					// ignore
@@ -2264,32 +2267,36 @@
 					</div>
 				</Pane>
 
-				<ChatControls
-					bind:this={controlPaneComponent}
-					bind:history
-					bind:chatFiles
-					bind:params
-					bind:files
-					bind:pane={controlPane}
-					chatId={$chatId}
-					modelId={selectedModelIds?.at(0) ?? null}
-					models={selectedModelIds.reduce((a, e, i, arr) => {
-						const model = $models.find((m) => m.id === e);
-						if (model) {
-							return [...a, model];
-						}
-						return a;
-					}, [])}
-					{submitPrompt}
-					{stopResponse}
-					{showMessage}
-					{eventTarget}
-				/>
-
-				<AgentControls
-					bind:this={agentPaneComponent}
-					bind:pane={agentPane}
-				/>
+				{#if $showControls || $agentState.showPanel}
+					{#if $showControls}
+						<ChatControls
+							bind:this={sidePaneComponent}
+							bind:history
+							bind:chatFiles
+							bind:params
+							bind:files
+							bind:pane={sidePane}
+							chatId={$chatId}
+							modelId={selectedModelIds?.at(0) ?? null}
+							models={selectedModelIds.reduce((a, e, i, arr) => {
+								const model = $models.find((m) => m.id === e);
+								if (model) {
+									return [...a, model];
+								}
+								return a;
+							}, [])}
+							{submitPrompt}
+							{stopResponse}
+							{showMessage}
+							{eventTarget}
+						/>
+					{:else if $agentState.showPanel}
+						<AgentControls
+							bind:this={sidePaneComponent}
+							bind:pane={sidePane}
+						/>
+					{/if}
+				{/if}
 			</PaneGroup>
 		</div>
 	{:else if loading}
