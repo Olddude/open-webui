@@ -10,7 +10,7 @@ if [ "$(pwd)" != "$root_dir_path" ]; then
     cd "$root_dir_path"
 fi
 
-if [ -d .venv ]; then
+if [ -f .venv/bin/activate ]; then
     source .venv/bin/activate
 fi
 
@@ -23,6 +23,4 @@ fi
 uvicorn open_webui.main:app \
     --host "0.0.0.0" \
     --port "8080" \
-    --forwarded-allow-ips "*" \
-    --workers "1" \
     --reload

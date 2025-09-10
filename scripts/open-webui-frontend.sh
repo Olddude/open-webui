@@ -10,7 +10,7 @@ if [ "$(pwd)" != "$root_dir_path" ]; then
     cd "$root_dir_path"
 fi
 
-if [ -d .venv ]; then
+if [ -f .venv/bin/activate ]; then
     source .venv/bin/activate
 fi
 

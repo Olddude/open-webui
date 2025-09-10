@@ -153,38 +153,47 @@
 						</Menu>
 					{/if}
 
-					<Tooltip content={$i18n.t('Controls')}>
-						<button
-							class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-							on:click={async () => {
-								await showControls.set(!$showControls);
-							}}
-							aria-label="Controls"
-						>
-							<div class=" m-auto self-center">
-								<AdjustmentsHorizontal className=" size-5" strokeWidth="0.5" />
-							</div>
-						</button>
-					</Tooltip>
+			<Tooltip content={$i18n.t('Controls')}>
+				<button
+					class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition {$showControls ? 'bg-gray-100 dark:bg-gray-800' : ''}"
+					on:click={async () => {
+						// Close agent panel if it's open
+						if ($agentState.showPanel) {
+							agentState.update(state => ({
+								...state,
+								showPanel: false
+							}));
+						}
+						await showControls.set(!$showControls);
+					}}
+					aria-label="Controls"
+				>
+					<div class=" m-auto self-center">
+						<AdjustmentsHorizontal className=" size-5" strokeWidth="0.5" />
+					</div>
+				</button>
+			</Tooltip>
 
-					{#if $agentState.isAgenticMode}
-						<Tooltip content="Agent Activity">
-							<button
-								class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition {$agentState.showPanel ? 'bg-gray-100 dark:bg-gray-800' : ''}"
-								on:click={() => {
-									agentState.update(state => ({
-										...state,
-										showPanel: !state.showPanel
-									}));
-								}}
-								aria-label="Agent Activity"
-							>
-								<div class=" m-auto self-center">
-									<Activity className=" size-5" strokeWidth="1.5" />
-								</div>
-							</button>
-						</Tooltip>
-					{/if}
+			<Tooltip content="Agent Activity">
+				<button
+					class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition {$agentState.showPanel ? 'bg-gray-100 dark:bg-gray-800' : ''}"
+					on:click={async () => {
+						// Close controls panel if it's open
+						if ($showControls) {
+							await showControls.set(false);
+						}
+						agentState.update(state => ({
+							...state,
+							showPanel: !state.showPanel
+						}));
+					}}
+					aria-label="Agent Activity"
+				>
+					<div class=" m-auto self-center">
+						<Activity className=" size-5" strokeWidth="1.5" />
+					</div>
+				</button>
+			</Tooltip>
 
 					{#if $mobile}
 						<Tooltip content={$i18n.t('New Chat')}>
