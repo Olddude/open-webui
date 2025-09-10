@@ -96,31 +96,22 @@ We are incredibly grateful for the generous support of our sponsors. Their contr
 
 ## How to Install 🚀
 
-### Installation via uv 🐍
+### Installation via Python pip 🐍
 
-Open WebUI can be installed using uv, the fast Python package manager. Before proceeding, ensure you're using **Python 3.11-3.12** for compatibility.
+Open WebUI can be installed using pip, the Python package installer. Before proceeding, ensure you're using **Python 3.11** to avoid compatibility issues.
 
-1. **Install uv** (if not already installed):
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-   Or on macOS/Linux with Homebrew:
-   ```bash
-   brew install uv
-   ```
-
-2. **Install Open WebUI**:
+1. **Install Open WebUI**:
    Open your terminal and run the following command to install Open WebUI:
 
    ```bash
-   uv pip install open-webui
+   pip install open-webui
    ```
 
-3. **Running Open WebUI**:
+2. **Running Open WebUI**:
    After installation, you can start Open WebUI by executing:
 
    ```bash
-   uv run open-webui serve
+   open-webui serve
    ```
 
 This will start the Open WebUI server, which you can access at [http://localhost:8080](http://localhost:8080)
