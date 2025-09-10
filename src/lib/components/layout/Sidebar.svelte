@@ -58,7 +58,6 @@
 	import Home from '../icons/Home.svelte';
 	import Search from '../icons/Search.svelte';
 	import SearchModal from './SearchModal.svelte';
-	import { Activity } from 'lucide-svelte';
 
 	const BREAKPOINT = 768;
 
