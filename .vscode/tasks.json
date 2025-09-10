@@ -1,23 +1,4 @@
 {
 	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "venv_activate",
-			"type": "shell",
-			"command": "source .venv/bin/activate",
-			"args": [],
-			"options": {
-				"cwd": "${workspaceFolder}",
-				"env": {},
-				"shell": {
-					"executable": "bash",
-					"args": ["-c"]
-				}
-			},
-			"presentation": {
-				"reveal": "always",
-				"panel": "shared"
-			}
-		}
-	]
+	"tasks": []
 }

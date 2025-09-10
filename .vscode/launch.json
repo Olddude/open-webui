@@ -16,20 +16,18 @@
 			"cwd": "${workspaceFolder}",
 			"program": "${workspaceFolder}/scripts/${input:target}",
 			"args": [],
-			"env": {},
-			"internalConsoleOptions": "openOnSessionStart"
+			"env": {}
 		},
 		{
 			"type": "debugpy",
 			"request": "launch",
 			"name": "[Debug] Backend Function",
-			"preLaunchTask": "venv_activate",
-			"python": "${workspaceFolder}/.venv/bin/python",
 			"cwd": "${workspaceFolder}/backend",
+			"python": "${workspaceFolder}/.venv/bin/python3.11",
 			"program": "${workspaceFolder}/backend/functions/${input:target}",
 			"args": [],
 			"env": {
-				"PYTHONPATH": "${workspaceFolder}/backend"
+				"PYTHONPATH": "${workspaceFolder}/backend:${env:PYTHONPATH}"
 			},
 			"envFile": "${workspaceFolder}/.env"
 		},
@@ -37,9 +35,8 @@
 			"type": "debugpy",
 			"request": "launch",
 			"name": "[Debug] Backend",
-			"preLaunchTask": "venv_activate",
-			"python": "${workspaceFolder}/.venv/bin/python",
 			"cwd": "${workspaceFolder}/backend",
+			"python": "${workspaceFolder}/.venv/bin/python3.11",
 			"module": "uvicorn",
 			"args": ["open_webui.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"],
 			"env": {
