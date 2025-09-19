@@ -15,6 +15,7 @@
 		temporaryChatEnabled,
 		user
 	} from '$lib/stores';
+	import { agentState } from '$lib/stores';
 
 	import { slide } from 'svelte/transition';
 	import { page } from '$app/stores';
@@ -26,6 +27,7 @@
 	import UserMenu from '$lib/components/layout/Sidebar/UserMenu.svelte';
 	import MenuLines from '../icons/MenuLines.svelte';
 	import AdjustmentsHorizontal from '../icons/AdjustmentsHorizontal.svelte';
+	import { Activity } from 'lucide-svelte';
 
 	import PencilSquare from '../icons/PencilSquare.svelte';
 	import Banner from '../common/Banner.svelte';
@@ -151,19 +153,47 @@
 						</Menu>
 					{/if}
 
-					<Tooltip content={$i18n.t('Controls')}>
-						<button
-							class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-							on:click={async () => {
-								await showControls.set(!$showControls);
-							}}
-							aria-label="Controls"
-						>
-							<div class=" m-auto self-center">
-								<AdjustmentsHorizontal className=" size-5" strokeWidth="0.5" />
-							</div>
-						</button>
-					</Tooltip>
+			<Tooltip content={$i18n.t('Controls')}>
+				<button
+					class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition {$showControls ? 'bg-gray-100 dark:bg-gray-800' : ''}"
+					on:click={async () => {
+						// Close agent panel if it's open
+						if ($agentState.showPanel) {
+							agentState.update(state => ({
+								...state,
+								showPanel: false
+							}));
+						}
+						await showControls.set(!$showControls);
+					}}
+					aria-label="Controls"
+				>
+					<div class=" m-auto self-center">
+						<AdjustmentsHorizontal className=" size-5" strokeWidth="0.5" />
+					</div>
+				</button>
+			</Tooltip>
+
+			<Tooltip content="Agent Activity">
+				<button
+					class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition {$agentState.showPanel ? 'bg-gray-100 dark:bg-gray-800' : ''}"
+					on:click={async () => {
+						// Close controls panel if it's open
+						if ($showControls) {
+							await showControls.set(false);
+						}
+						agentState.update(state => ({
+							...state,
+							showPanel: !state.showPanel
+						}));
+					}}
+					aria-label="Agent Activity"
+				>
+					<div class=" m-auto self-center">
+						<Activity className=" size-5" strokeWidth="1.5" />
+					</div>
+				</button>
+			</Tooltip>
 
 					{#if $mobile}
 						<Tooltip content={$i18n.t('New Chat')}>
@@ -221,7 +251,7 @@
 	{/if}
 
 	<div class="absolute top-[100%] left-0 right-0 h-fit">
-		{#if !history.currentId && !$chatId && ($banners.length > 0 || ($config?.license_metadata?.type ?? null) === 'trial' || (($config?.license_metadata?.seats ?? null) !== null && $config?.user_count > $config?.license_metadata?.seats))}
+		{#if history && !history.currentId && !$chatId && ($banners.length > 0 || ($config?.license_metadata?.type ?? null) === 'trial' || (($config?.license_metadata?.seats ?? null) !== null && $config?.user_count > $config?.license_metadata?.seats))}
 			<div class=" w-full z-30 mt-5">
 				<div class=" flex flex-col gap-1 w-full">
 					{#if ($config?.license_metadata?.type ?? null) === 'trial'}

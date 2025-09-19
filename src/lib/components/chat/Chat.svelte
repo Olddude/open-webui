@@ -39,6 +39,7 @@
 		toolServers,
 		selectedFolder
 	} from '$lib/stores';
+	import { agentState } from '$lib/stores';
 	import {
 		convertMessagesToHistory,
 		copyToClipboard,
@@ -83,6 +84,7 @@
 	import Messages from '$lib/components/chat/Messages.svelte';
 	import Navbar from '$lib/components/chat/Navbar.svelte';
 	import ChatControls from './ChatControls.svelte';
+	import AgentControls from './AgentControls.svelte';
 	import EventConfirmDialog from '../common/ConfirmDialog.svelte';
 	import Placeholder from './Placeholder.svelte';
 	import NotificationToast from '../NotificationToast.svelte';
@@ -94,8 +96,9 @@
 	let loading = true;
 
 	const eventTarget = new EventTarget();
-	let controlPane;
-	let controlPaneComponent;
+	let sidePane;
+	let sidePaneComponent;
+	let activePanelType = null; // 'controls' or 'agent'
 
 	let messageInput;
 
@@ -502,12 +505,14 @@
 		}
 
 		showControls.subscribe(async (value) => {
-			if (controlPane && !$mobile) {
+			if (sidePane && !$mobile) {
 				try {
 					if (value) {
-						controlPaneComponent.openPane();
-					} else {
-						controlPane.collapse();
+						activePanelType = 'controls';
+						sidePaneComponent.openPane();
+					} else if (activePanelType === 'controls') {
+						sidePane.collapse();
+						activePanelType = null;
 					}
 				} catch (e) {
 					// ignore
@@ -518,6 +523,22 @@
 				showCallOverlay.set(false);
 				showOverview.set(false);
 				showArtifacts.set(false);
+			}
+		});
+
+		agentState.subscribe(async (state) => {
+			if (sidePane && !$mobile) {
+				try {
+					if (state.showPanel) {
+						activePanelType = 'agent';
+						sidePaneComponent.openPane();
+					} else if (activePanelType === 'agent') {
+						sidePane.collapse();
+						activePanelType = null;
+					}
+				} catch (e) {
+					// ignore
+				}
 			}
 		});
 
@@ -2100,13 +2121,14 @@
 						{history}
 						title={$chatTitle}
 						bind:selectedModels
-						shareEnabled={!!history.currentId}
+						shareEnabled={history && history.currentId ? true : false}
 						{initNewChat}
 						showBanners={!showCommands}
 					/>
 
 					<div class="flex flex-col flex-auto z-10 w-full @container">
-						{#if $settings?.landingPageMode === 'chat' || createMessagesList(history, history.currentId).length > 0}
+						{#if $settings?.landingPageMode === 'chat' ||
+							(history && createMessagesList(history, history.currentId).length > 0)}
 							<div
 								class=" pb-2.5 flex flex-col justify-between w-full flex-auto overflow-auto h-0 max-w-full z-10 scrollbar-hidden"
 								id="messages-container"
@@ -2246,27 +2268,36 @@
 					</div>
 				</Pane>
 
-				<ChatControls
-					bind:this={controlPaneComponent}
-					bind:history
-					bind:chatFiles
-					bind:params
-					bind:files
-					bind:pane={controlPane}
-					chatId={$chatId}
-					modelId={selectedModelIds?.at(0) ?? null}
-					models={selectedModelIds.reduce((a, e, i, arr) => {
-						const model = $models.find((m) => m.id === e);
-						if (model) {
-							return [...a, model];
-						}
-						return a;
-					}, [])}
-					{submitPrompt}
-					{stopResponse}
-					{showMessage}
-					{eventTarget}
-				/>
+				{#if $showControls || $agentState.showPanel}
+					{#if $showControls}
+						<ChatControls
+							bind:this={sidePaneComponent}
+							bind:history
+							bind:chatFiles
+							bind:params
+							bind:files
+							bind:pane={sidePane}
+							chatId={$chatId}
+							modelId={selectedModelIds?.at(0) ?? null}
+							models={selectedModelIds.reduce((a, e, i, arr) => {
+								const model = $models.find((m) => m.id === e);
+								if (model) {
+									return [...a, model];
+								}
+								return a;
+							}, [])}
+							{submitPrompt}
+							{stopResponse}
+							{showMessage}
+							{eventTarget}
+						/>
+					{:else if $agentState.showPanel}
+						<AgentControls
+							bind:this={sidePaneComponent}
+							bind:pane={sidePane}
+						/>
+					{/if}
+				{/if}
 			</PaneGroup>
 		</div>
 	{:else if loading}

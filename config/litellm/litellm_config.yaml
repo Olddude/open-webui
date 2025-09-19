@@ -1,0 +1,125 @@
+# LiteLLM Proxy Configuration
+# https://docs.litellm.ai/docs/proxy/configs
+
+model_list:
+  # Google Gemini Models
+  - model_name: "gemini-2.5-flash"
+    litellm_params:
+      model: "gemini/gemini-1.5-flash"
+      api_key: "os.environ/GOOGLE_API_KEY"
+      
+  - model_name: "gemini-pro"
+    litellm_params:
+      model: "gemini/gemini-pro"
+      api_key: "os.environ/GOOGLE_API_KEY"
+      
+  # OpenAI Models
+  - model_name: "gpt-4"
+    litellm_params:
+      model: "gpt-4"
+      api_key: "os.environ/OPENAI_API_KEY"
+      
+  - model_name: "gpt-4-turbo"
+    litellm_params:
+      model: "gpt-4-turbo-preview"
+      api_key: "os.environ/OPENAI_API_KEY"
+      
+  - model_name: "gpt-3.5-turbo"
+    litellm_params:
+      model: "gpt-3.5-turbo"
+      api_key: "os.environ/OPENAI_API_KEY"
+      
+  # Anthropic Models (optional)
+  - model_name: "claude-3-opus"
+    litellm_params:
+      model: "anthropic/claude-3-opus-20240229"
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+      
+  - model_name: "claude-3-sonnet"
+    litellm_params:
+      model: "anthropic/claude-3-sonnet-20240229"
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+      
+  # Mistral Models (optional)
+  - model_name: "mistral-large"
+    litellm_params:
+      model: "mistral/mistral-large-latest"
+      api_key: "os.environ/MISTRAL_API_KEY"
+      
+  # DeepSeek Models (optional)
+  - model_name: "deepseek-coder"
+    litellm_params:
+      model: "deepseek/deepseek-coder"
+      api_key: "os.environ/DEEPSEEK_API_KEY"
+
+# Router Settings
+router_settings:
+  routing_strategy: "simple"  # simple, least-busy, usage-based-routing
+  model_group_alias: {"gpt-4": ["gpt-4-turbo", "claude-3-opus"]}
+  num_retries: 3
+  timeout: 600  # 10 minutes
+  max_retries: 3
+  retry_after: 5
+  allowed_fails: 3
+  cooldown_time: 60
+
+# General Settings
+general_settings:
+  completion_model: "gpt-3.5-turbo"
+  disable_spend_logs: false
+  disable_master_key_logs: false
+  disable_reset_budget: false
+  enable_jwt_auth: false
+  enforce_user_param: false
+  allowed_routes: ["chat/completions", "completions", "embeddings"]
+  # key_management_system: "local"  # google_kms, azure_kms, local
+  # master_key: "os.environ/LITELLM_MASTER_KEY"
+  database_type: "postgresql"
+  database_url: "os.environ/DATABASE_URL"
+  database_connection_pool_size: 10
+  database_connection_timeout: 10
+  database_args:
+    ttl: 3600
+    
+# Litellm Settings
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  json_logs: true
+  log_raw_request_response: false
+  cache: true
+  cache_params:
+    type: "redis"
+    supported_call_types: ["completion", "embedding"]
+    ttl: 3600
+    
+  success_callback: ["prometheus", "langfuse"]
+  failure_callback: ["prometheus"]
+  
+  # Rate limiting
+  max_parallel_requests: 100
+  max_tokens_per_minute: 1000000
+  
+  # Cost tracking
+  max_budget: 1000
+  budget_duration: "30d"
+  
+  # Request modifications
+  default_max_tokens: 2048
+  default_temperature: 0.7
+  
+# Environment variables
+environment_variables:
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: "os.environ/REDIS_PASSWORD"
+  LANGFUSE_PUBLIC_KEY: ""
+  LANGFUSE_SECRET_KEY: ""
+  LANGFUSE_HOST: ""
+  
+# CORS Settings
+cors_settings:
+  allow_origins: ["http://localhost:3000", "http://localhost:4001"]
+  allow_credentials: true
+  allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allow_headers: ["*"]

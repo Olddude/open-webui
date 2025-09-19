@@ -109,8 +109,8 @@
 
 	$: onChange({
 		prompt,
-		files: files
-			.filter((file) => file.type !== 'image')
+		files: (files || [])
+			.filter((file) => file && file.type !== 'image')
 			.map((file) => {
 				return {
 					...file,

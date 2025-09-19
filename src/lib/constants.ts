@@ -1,5 +1,7 @@
 import { browser, dev } from '$app/environment';
-// import { version } from '../../package.json';
+import { version as APP_VERSION } from '../../package.json';
+
+const APP_BUILD_HASH = 'unknown';
 
 export const APP_NAME = 'Open WebUI';
 

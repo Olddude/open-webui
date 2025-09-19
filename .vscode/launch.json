@@ -1,0 +1,60 @@
+{
+	"version": "0.2.0",
+	"inputs": [
+		{
+			"id": "target",
+			"type": "promptString",
+			"description": "target to debug",
+			"default": ""
+		}
+	],
+	"configurations": [
+		{
+			"type": "bashdb",
+			"request": "launch",
+			"name": "[Debug] Script",
+			"cwd": "${workspaceFolder}",
+			"program": "${workspaceFolder}/scripts/${input:target}",
+			"args": [],
+			"env": {}
+		},
+		{
+			"type": "debugpy",
+			"request": "launch",
+			"name": "[Debug] Backend Function",
+			"cwd": "${workspaceFolder}/backend",
+			"python": "${workspaceFolder}/.venv/bin/python3.11",
+			"program": "${workspaceFolder}/backend/functions/${input:target}",
+			"args": [],
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/backend:${env:PYTHONPATH}"
+			},
+			"envFile": "${workspaceFolder}/.env"
+		},
+		{
+			"type": "debugpy",
+			"request": "launch",
+			"name": "[Debug] Backend",
+			"cwd": "${workspaceFolder}/backend",
+			"python": "${workspaceFolder}/.venv/bin/python3.11",
+			"module": "uvicorn",
+			"args": ["open_webui.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"],
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/backend:${env:PYTHONPATH}"
+			},
+			"envFile": "${workspaceFolder}/.env"
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "[Launch] Frontend",
+			"cwd": "${workspaceFolder}",
+			"program": "${env:HOME}/.nvm/versions/node/v22.18.0/bin/npm",
+			"args": ["run", "dev"],
+			"env": {
+				"NODE_ENV": "development"
+			},
+			"envFile": "${workspaceFolder}/.env"
+		}
+	]
+}

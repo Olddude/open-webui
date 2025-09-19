@@ -16,6 +16,12 @@ export default defineConfig({
 			]
 		})
 	],
+	server: {
+		allowedHosts: ['localhost', '192.168.178.121', 'universe'],
+		fs: {
+			allow: ['..', 'node_modules']
+		}
+	},
 	define: {
 		APP_VERSION: JSON.stringify(process.env.npm_package_version),
 		APP_BUILD_HASH: JSON.stringify(process.env.APP_BUILD_HASH || 'dev-build')

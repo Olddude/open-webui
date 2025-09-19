@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { SvelteFlowProvider } from '@xyflow/svelte';
 	import { slide } from 'svelte/transition';
-	import { Pane, PaneResizer } from 'paneforge';
+		import { Pane, PaneResizer, type PaneApi } from 'paneforge';
 
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { mobile, showControls, showCallOverlay, showOverview, showArtifacts } from '$lib/stores';
@@ -15,25 +15,26 @@
 	import Artifacts from './Artifacts.svelte';
 
 	export let history;
-	export let models = [];
+	export let models: any[] = [];
 
 	export let chatId = null;
 
-	export let chatFiles = [];
+	export let chatFiles: any[] = [];
 	export let params = {};
 
 	export let eventTarget: EventTarget;
 	export let submitPrompt: Function;
 	export let stopResponse: Function;
 	export let showMessage: Function;
-	export let files;
+	export let files: any;
 	export let modelId;
 
-	export let pane;
+		export let pane: PaneApi;
 
-	let mediaQuery;
+	let mediaQuery: MediaQueryList;
 	let largeScreen = false;
 	let dragged = false;
+	let resizeObserver: ResizeObserver;
 
 	let minSize = 0;
 
@@ -66,11 +67,11 @@
 		}
 	};
 
-	const onMouseDown = (event) => {
+	const onMouseDown = (event: MouseEvent) => {
 		dragged = true;
 	};
 
-	const onMouseUp = (event) => {
+	const onMouseUp = (event: MouseEvent) => {
 		dragged = false;
 	};
 
@@ -84,28 +85,30 @@
 		// Select the container element you want to observe
 		const container = document.getElementById('chat-container');
 
-		// initialize the minSize based on the container width
-		minSize = Math.floor((350 / container.clientWidth) * 100);
+		if (container) {
+			// initialize the minSize based on the container width
+			minSize = Math.floor((350 / container.clientWidth) * 100);
 
-		// Create a new ResizeObserver instance
-		const resizeObserver = new ResizeObserver((entries) => {
-			for (let entry of entries) {
-				const width = entry.contentRect.width;
-				// calculate the percentage of 200px
-				const percentage = (350 / width) * 100;
-				// set the minSize to the percentage, must be an integer
-				minSize = Math.floor(percentage);
+			// Create a new ResizeObserver instance
+			resizeObserver = new ResizeObserver((entries) => {
+				for (let entry of entries) {
+					const width = entry.contentRect.width;
+					// calculate the percentage of 200px
+					const percentage = (350 / width) * 100;
+					// set the minSize to the percentage, must be an integer
+					minSize = Math.floor(percentage);
 
-				if ($showControls) {
-					if (pane && pane.isExpanded() && pane.getSize() < minSize) {
-						pane.resize(minSize);
+					if ($showControls) {
+						if (pane && pane.isExpanded() && pane.getSize() < minSize) {
+							pane.resize(minSize);
+						}
 					}
 				}
-			}
-		});
+			});
 
-		// Start observing the container's size changes
-		resizeObserver.observe(container);
+			// Start observing the container's size changes
+			resizeObserver.observe(container);
+		}
 
 		document.addEventListener('mousedown', onMouseDown);
 		document.addEventListener('mouseup', onMouseUp);
@@ -114,7 +117,13 @@
 	onDestroy(() => {
 		showControls.set(false);
 
-		mediaQuery.removeEventListener('change', handleMediaQuery);
+		if (mediaQuery) {
+			mediaQuery.removeEventListener('change', handleMediaQuery);
+		}
+		if (resizeObserver) {
+			resizeObserver.disconnect();
+		}
+
 		document.removeEventListener('mousedown', onMouseDown);
 		document.removeEventListener('mouseup', onMouseUp);
 	});
