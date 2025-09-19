@@ -13,7 +13,7 @@ import os
 from unittest.mock import patch, AsyncMock
 
 # Import the function under test from the functions directory
-from chef_document_analyzer import main
+from functions.chef_document_analyzer import main
 
 
 class TestChefDocumentAnalyzer:

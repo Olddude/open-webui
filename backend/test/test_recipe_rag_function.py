@@ -13,7 +13,7 @@ import os
 from unittest.mock import patch, AsyncMock
 
 # Import the function under test from the functions directory
-from recipe_rag_function import main
+from functions.recipe_rag_function import main
 
 
 class TestRecipeRagFunction:
