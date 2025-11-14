@@ -9,7 +9,7 @@ import asyncio
 import os
 from unittest.mock import patch, AsyncMock, MagicMock
 
-from backend.functions.openai_function import Pipe, main
+from functions.openai_function import Pipe, main
 
 
 class TestOpenAIFunction:

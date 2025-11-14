@@ -12,7 +12,7 @@ import sys
 import os
 from unittest.mock import patch, AsyncMock
 
-from backend.functions.recipe_rag_function import main
+from functions.recipe_rag_function import main
 
 
 class TestRecipeRagFunction:

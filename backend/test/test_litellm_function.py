@@ -9,7 +9,7 @@ import asyncio
 import os
 from unittest.mock import patch, AsyncMock, MagicMock
 
-from backend.functions.litellm_function import Pipe, main
+from functions.litellm_function import Pipe, main
 
 
 class TestLiteLLMFunction:

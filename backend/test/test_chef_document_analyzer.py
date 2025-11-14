@@ -10,7 +10,7 @@ import sys
 import os
 from unittest.mock import patch, AsyncMock
 
-from backend.functions.chef_document_analyzer import main
+from functions.chef_document_analyzer import main
 
 
 class TestChefDocumentAnalyzer:

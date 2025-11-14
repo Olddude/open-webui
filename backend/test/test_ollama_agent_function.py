@@ -8,7 +8,7 @@ import pytest
 import asyncio
 from unittest.mock import patch, AsyncMock, Mock
 
-from backend.functions.ollama_agent_function import (
+from functions.ollama_agent_function import (
     Pipe,
     TaskMonitor,
     AgentMemory,
