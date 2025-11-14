@@ -7,11 +7,8 @@ requirements: openai, python-magic, pypdf2, python-docx, openpyxl, pyyaml
 
 from typing import Dict, Any, Optional, AsyncGenerator, List
 import asyncio
-import json
-import yaml
 import os
 import logging
-import io
 import base64
 from pydantic import BaseModel
 from openai import AsyncOpenAI

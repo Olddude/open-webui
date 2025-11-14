@@ -110,17 +110,17 @@ Total items processed: {len(json_result.get('recipes', []))}
 
         prompt = f"""
         Convert the following recipe data into a well-structured JSON format.
-        
+
         Instructions:
         1. Extract any recipes, ingredients, or cooking instructions
         2. Structure the data with proper fields like name, ingredients, instructions, servings, etc.
         3. If the input contains multiple recipes, create an array
         4. Add any missing standard fields with reasonable defaults
         5. Return only valid JSON
-        
+
         Input data:
         {user_input}
-        
+
         Return the data as a JSON object with this structure:
         {{
             "recipes": [
@@ -227,7 +227,7 @@ async def main():
     # Example recipe input data
     example_recipe_input = """
     Chocolate Chip Cookies
-    
+
     Ingredients:
     - 2 1/4 cups all-purpose flour
     - 1 tsp baking soda
@@ -238,7 +238,7 @@ async def main():
     - 2 large eggs
     - 2 tsp vanilla extract
     - 2 cups chocolate chips
-    
+
     Instructions:
     1. Preheat oven to 375°F (190°C)
     2. Mix flour, baking soda and salt in a bowl

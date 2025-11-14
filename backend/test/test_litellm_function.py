@@ -1,7 +1,7 @@
 """
-Integration tests for openai_function.py
+Integration tests for litellm_function.py
 
-Tests the OpenAI streaming chat function with file upload capability.
+Tests the LiteLLM streaming chat function with file upload capability.
 """
 
 import pytest
@@ -9,17 +9,18 @@ import asyncio
 import os
 from unittest.mock import patch, AsyncMock, MagicMock
 
-from backend.functions.openai_function import Pipe, main
+from backend.functions.litellm_function import Pipe, main
 
 
-class TestOpenAIFunction:
-    """Test class for OpenAI streaming function"""
+class TestLiteLLMFunction:
+    """Test class for LiteLLM streaming function"""
 
     @pytest.fixture
     def pipe_instance(self):
         """Create a Pipe instance for testing"""
         pipe = Pipe()
-        pipe.valves.openai_api_key = "test_api_key"
+        pipe.valves.litellm_api_key = "password"
+        pipe.valves.litellm_api_base = "http://localhost:8080"
         return pipe
 
     @pytest.fixture
@@ -40,8 +41,9 @@ class TestOpenAIFunction:
         """Test Pipe instance creation and configuration"""
         pipe = Pipe()
 
-        assert pipe.name == "OpenAI Streaming Chat with File Upload"
-        assert pipe.valves.openai_model == "gpt-4o-mini"
+        assert pipe.name == "LiteLLM Streaming Chat with File Upload"
+        assert pipe.valves.litellm_model == "gemma"
+        assert pipe.valves.litellm_api_base == "http://localhost:8080"
         assert pipe.valves.temperature == 0.7
         assert pipe.valves.stream is True
         assert pipe.valves.vision_enabled is True
@@ -50,49 +52,58 @@ class TestOpenAIFunction:
     async def test_on_startup_with_api_key(self):
         """Test startup with valid API key"""
         pipe = Pipe()
-        pipe.valves.openai_api_key = "test_api_key"
+        pipe.valves.litellm_api_key = "password"
+        pipe.valves.litellm_api_base = "http://localhost:8080"
 
-        with patch("openai_function.AsyncOpenAI") as mock_openai:
+        with patch("litellm_function.AsyncOpenAI") as mock_openai:
             mock_client = AsyncMock()
             mock_openai.return_value = mock_client
 
             await pipe.on_startup()
 
-            assert pipe.openai_client is not None
+            assert pipe.litellm_client is not None
             mock_openai.assert_called_once_with(
-                api_key="test_api_key", base_url="https://api.openai.com/v1"
+                api_key="password", base_url="http://localhost:8080"
             )
 
     @pytest.mark.asyncio
     async def test_on_startup_without_api_key(self, capsys):
-        """Test startup without API key"""
+        """Test startup without API key - should use dummy key"""
         pipe = Pipe()
-        pipe.valves.openai_api_key = ""
+        pipe.valves.litellm_api_key = ""
 
-        with patch.dict(os.environ, {"OPENAI_API_KEY": ""}, clear=True):
-            await pipe.on_startup()
+        with patch.dict(os.environ, {"LITELLM_API_KEY": ""}, clear=True):
+            with patch("backend.functions.litellm_function.AsyncOpenAI") as mock_openai:
+                mock_client = AsyncMock()
+                mock_openai.return_value = mock_client
 
-            assert pipe.openai_client is None
+                await pipe.on_startup()
+
+                # Should still initialize with dummy key
+                assert pipe.litellm_client is not None
+                mock_openai.assert_called_once()
+                call_kwargs = mock_openai.call_args[1]
+                assert call_kwargs["api_key"] == "dummy"
 
     @pytest.mark.asyncio
     async def test_pipe_without_client_initialized(self, sample_body):
-        """Test pipe function when OpenAI client is not initialized"""
+        """Test pipe function when LiteLLM client is not initialized"""
         pipe = Pipe()
-        pipe.openai_client = None
+        pipe.litellm_client = None
 
         result = []
         async for chunk in pipe.pipe(sample_body):
             result.append(chunk)
 
         assert len(result) == 1
-        assert "OpenAI client not initialized" in result[0]
+        assert "LiteLLM client not initialized" in result[0]
 
     @pytest.mark.asyncio
     async def test_streaming_response(self, pipe_instance, sample_body):
         """Test streaming response functionality"""
-        # Mock the OpenAI client
+        # Mock the LiteLLM client
         mock_client = AsyncMock()
-        pipe_instance.openai_client = mock_client
+        pipe_instance.litellm_client = mock_client
 
         # Create a mock streaming response
         async def mock_stream():
@@ -118,9 +129,9 @@ class TestOpenAIFunction:
         """Test non-streaming response functionality"""
         pipe_instance.valves.stream = False
 
-        # Mock the OpenAI client
+        # Mock the LiteLLM client
         mock_client = AsyncMock()
-        pipe_instance.openai_client = mock_client
+        pipe_instance.litellm_client = mock_client
 
         # Mock non-streaming response
         mock_response = MagicMock()
@@ -195,9 +206,9 @@ class TestOpenAIFunction:
     @pytest.mark.asyncio
     async def test_error_handling_api_error(self, pipe_instance, sample_body):
         """Test error handling for API errors"""
-        # Mock the OpenAI client to raise an error
+        # Mock the LiteLLM client to raise an error
         mock_client = AsyncMock()
-        pipe_instance.openai_client = mock_client
+        pipe_instance.litellm_client = mock_client
         mock_client.chat.completions.create.side_effect = Exception("API Error")
 
         # Collect error response
@@ -212,13 +223,13 @@ class TestOpenAIFunction:
     @pytest.mark.asyncio
     async def test_main_function_execution(self, capsys):
         """Test main function execution"""
-        with patch("openai_function.Pipe") as mock_pipe_class:
+        with patch("backend.functions.litellm_function.Pipe") as mock_pipe_class:
             mock_pipe = AsyncMock()
             mock_pipe_class.return_value = mock_pipe
 
             # Mock successful connection
-            mock_pipe.openai_client = MagicMock()
-            mock_pipe.valves.openai_api_key = "test_key"
+            mock_pipe.litellm_client = MagicMock()
+            mock_pipe.valves.litellm_api_key = "password"
             mock_pipe.valves.stream = True
 
             # Mock streaming response
@@ -233,7 +244,7 @@ class TestOpenAIFunction:
 
             # Check output
             captured = capsys.readouterr()
-            assert "🤖 OpenAI Streaming Function Test" in captured.out
+            assert "🤖 LiteLLM Streaming Function Test" in captured.out
             assert "Testing streaming response..." in captured.out
             assert "✅ Streaming test completed!" in captured.out
             assert "✅ Non-streaming test completed!" in captured.out
@@ -242,7 +253,7 @@ class TestOpenAIFunction:
     async def test_timeout_handling(self, pipe_instance, sample_body):
         """Test timeout handling"""
         mock_client = AsyncMock()
-        pipe_instance.openai_client = mock_client
+        pipe_instance.litellm_client = mock_client
 
         # Simulate timeout
         mock_client.chat.completions.create.side_effect = asyncio.TimeoutError()
@@ -258,19 +269,46 @@ class TestOpenAIFunction:
     async def test_vision_model_detection(self, pipe_instance):
         """Test vision model capability detection"""
         # Test with vision model
-        pipe_instance.valves.openai_model = "gpt-4o"
+        pipe_instance.valves.litellm_model = "gpt-4o"
+        assert pipe_instance.supports_vision() is True
+
+        # Test with non-vision model
+        pipe_instance.valves.litellm_model = "gemma"
+        assert pipe_instance.supports_vision() is False
+
+        # Test image processing with vision model
+        pipe_instance.valves.litellm_model = "gpt-4o"
         image_data = {"data": "base64_data", "type": "image/jpeg"}
 
         result = await pipe_instance.process_image(image_data)
         assert result["type"] == "image_url"
 
         # Test with non-vision model
-        pipe_instance.valves.openai_model = "gpt-3.5-turbo"
+        pipe_instance.valves.litellm_model = "gemma"
         pipe_instance.valves.vision_enabled = True
 
         result = await pipe_instance.process_image(image_data)
         assert result["type"] == "text"
         assert "model doesn't support vision" in result["text"]
+
+    @pytest.mark.asyncio
+    async def test_model_enum_values(self, pipe_instance):
+        """Test that model enum contains expected values"""
+        expected_models = [
+            "gemma",
+            "gpt-oss",
+            "ollama-embeddings",
+            "ollama-embeddings-large",
+            "genkit",
+            "llama-cpp",
+        ]
+
+        # Check that all expected models are in the enum
+        model_field = pipe_instance.valves.__fields__["litellm_model"]
+        enum_values = model_field.field_info.extra.get("enum", [])
+
+        for model in expected_models:
+            assert model in enum_values
 
     @pytest.mark.asyncio
     async def test_event_emitter_functionality(self, pipe_instance, sample_body):
@@ -282,7 +320,7 @@ class TestOpenAIFunction:
 
         # Setup mock client
         mock_client = AsyncMock()
-        pipe_instance.openai_client = mock_client
+        pipe_instance.litellm_client = mock_client
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
         mock_response.choices[0].message.content = "Test response"
@@ -322,12 +360,59 @@ class TestOpenAIFunction:
     @pytest.mark.asyncio
     async def test_on_shutdown(self, pipe_instance):
         """Test cleanup on shutdown"""
-        pipe_instance.openai_client = MagicMock()
-        pipe_instance.openai_client.close = AsyncMock()
+        pipe_instance.litellm_client = MagicMock()
+        pipe_instance.litellm_client.close = AsyncMock()
 
         await pipe_instance.on_shutdown()
 
-        pipe_instance.openai_client.close.assert_called_once()
+        pipe_instance.litellm_client.close.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_api_base_configuration(self):
+        """Test that API base URL is correctly configured"""
+        pipe = Pipe()
+
+        assert pipe.valves.litellm_api_base == "http://localhost:8080"
+
+        # Test custom base URL
+        pipe.valves.litellm_api_base = "http://custom-host:9000"
+        assert pipe.valves.litellm_api_base == "http://custom-host:9000"
+
+    @pytest.mark.asyncio
+    async def test_authentication_with_bearer_token(self):
+        """Test that API key is used as Bearer token"""
+        pipe = Pipe()
+        pipe.valves.litellm_api_key = "password"
+        pipe.valves.litellm_api_base = "http://localhost:8080"
+
+        with patch("backend.functions.litellm_function.AsyncOpenAI") as mock_openai:
+            mock_client = AsyncMock()
+            mock_openai.return_value = mock_client
+
+            await pipe.on_startup()
+
+            # Verify that the API key is passed
+            mock_openai.assert_called_once_with(
+                api_key="password", base_url="http://localhost:8080"
+            )
+
+    @pytest.mark.asyncio
+    async def test_multiple_models_support(self, pipe_instance):
+        """Test that different models can be configured"""
+        test_models = ["gemma", "gpt-oss", "llama-cpp", "genkit"]
+
+        for model in test_models:
+            pipe_instance.valves.litellm_model = model
+            assert pipe_instance.valves.litellm_model == model
+
+    @pytest.mark.asyncio
+    async def test_timeout_configuration(self, pipe_instance):
+        """Test timeout configuration"""
+        assert pipe_instance.valves.timeout == 60
+
+        # Test custom timeout
+        pipe_instance.valves.timeout = 120
+        assert pipe_instance.valves.timeout == 120
 
 
 if __name__ == "__main__":

@@ -12,8 +12,7 @@ import sys
 import os
 from unittest.mock import patch, AsyncMock
 
-# Import the function under test from the functions directory
-from functions.recipe_rag_function import main
+from backend.functions.recipe_rag_function import main
 
 
 class TestRecipeRagFunction:

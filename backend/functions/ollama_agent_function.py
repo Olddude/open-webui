@@ -8,7 +8,6 @@ requirements: aiohttp, asyncio, json
 from typing import Dict, Any, Optional, AsyncGenerator, List, Callable
 import asyncio
 import json
-import os
 import logging
 import time
 from datetime import datetime

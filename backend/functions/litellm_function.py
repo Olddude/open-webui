@@ -1,7 +1,7 @@
 """
-title: OpenAI Streaming Chat with File Upload
+title: LiteLLM Streaming Chat with File Upload
 author: Open WebUI
-description: OpenAI chat function with streaming support and file upload capability
+description: LiteLLM chat function with streaming support and file upload capability using OpenAI client
 requirements: openai, tiktoken, base64
 """
 
@@ -21,12 +21,24 @@ logger = logging.getLogger(__name__)
 
 class Pipe:
     class Valves(BaseModel):
-        openai_api_key: str = Field(default="", description="OpenAI API Key")
-        openai_api_base: str = Field(
-            default="https://api.openai.com/v1", description="OpenAI API Base URL"
+        litellm_api_base: str = Field(
+            default="http://localhost:8080",
+            description="LiteLLM proxy base URL",
         )
-        openai_model: str = Field(
-            default="gpt-4o-mini", description="OpenAI Model to use"
+        litellm_api_key: str = Field(
+            default="password", description="API Key for LiteLLM proxy (if required)"
+        )
+        litellm_model: str = Field(
+            default="gemma",
+            description="Model to use from LiteLLM proxy",
+            enum=[
+                "gemma",
+                "gpt-oss",
+                "ollama-embeddings",
+                "ollama-embeddings-large",
+                "genkit",
+                "llama-cpp",
+            ],
         )
         temperature: float = Field(
             default=0.7, description="Temperature for text generation"
@@ -49,40 +61,45 @@ class Pipe:
             ],
             description="Supported file types for upload",
         )
+        timeout: int = Field(default=60, description="Request timeout in seconds")
 
     def __init__(self):
-        self.name = "OpenAI Streaming Chat with File Upload"
+        self.name = "LiteLLM Streaming Chat with File Upload"
         self.valves = self.Valves()
-        self.openai_client: Optional[AsyncOpenAI] = None
+        self.litellm_client: Optional[AsyncOpenAI] = None
 
     async def on_startup(self):
-        """Initialize the OpenAI client"""
+        """Initialize the LiteLLM client using OpenAI client"""
         logger.info(f"Starting {self.name}")
 
-        # Initialize OpenAI client
         try:
-            api_key = os.getenv("OPENAI_API_KEY", self.valves.openai_api_key)
+            # Set API key from environment or valves
+            api_key = os.getenv("LITELLM_API_KEY") or self.valves.litellm_api_key
             if not api_key:
-                logger.error(
-                    "No OpenAI API key found. Please set OPENAI_API_KEY environment variable or configure in valves."
+                api_key = "dummy"  # LiteLLM proxy may not require an API key
+                logger.warning(
+                    "No LiteLLM API key provided. Using dummy key. If LiteLLM proxy requires authentication, set LITELLM_API_KEY."
                 )
-                return
 
-            self.openai_client = AsyncOpenAI(
-                api_key=api_key, base_url=self.valves.openai_api_base
+            # Initialize OpenAI client pointing to LiteLLM proxy
+            self.litellm_client = AsyncOpenAI(
+                api_key=api_key, base_url=self.valves.litellm_api_base
             )
-            logger.info("OpenAI client initialized successfully")
-            logger.info(f"Using model: {self.valves.openai_model}")
+
+            logger.info("LiteLLM client initialized successfully")
+            logger.info(f"Using LiteLLM proxy at: {self.valves.litellm_api_base}")
+            logger.info(f"Using model: {self.valves.litellm_model}")
             logger.info(f"Streaming: {self.valves.stream}")
+
         except Exception as e:
-            logger.error(f"Failed to initialize OpenAI client: {e}")
-            self.openai_client = None
+            logger.error(f"Failed to initialize LiteLLM client: {e}")
+            self.litellm_client = None
 
     async def on_shutdown(self):
         """Cleanup on shutdown"""
         logger.info(f"Shutting down {self.name}")
-        if self.openai_client:
-            await self.openai_client.close()
+        if self.litellm_client:
+            await self.litellm_client.close()
 
     async def pipe(
         self,
@@ -94,9 +111,27 @@ class Pipe:
     ) -> AsyncGenerator[str, None]:
         """Main pipe function for handling chat with streaming and file uploads"""
 
-        if not self.openai_client:
-            yield "❌ OpenAI client not initialized. Please check your API key configuration."
-            return
+        # Initialize client if not already initialized
+        if not self.litellm_client:
+            try:
+                # Set API key from environment or valves
+                api_key = os.getenv("LITELLM_API_KEY") or self.valves.litellm_api_key
+                if not api_key:
+                    api_key = "dummy"  # LiteLLM proxy may not require an API key
+
+                # Initialize OpenAI client pointing to LiteLLM proxy
+                self.litellm_client = AsyncOpenAI(
+                    api_key=api_key, base_url=self.valves.litellm_api_base
+                )
+
+                logger.info("LiteLLM client initialized in pipe method")
+                logger.info(f"Using LiteLLM proxy at: {self.valves.litellm_api_base}")
+                logger.info(f"Using model: {self.valves.litellm_model}")
+
+            except Exception as e:
+                logger.error(f"Failed to initialize LiteLLM client: {e}")
+                yield f"❌ Failed to initialize LiteLLM client: {str(e)}"
+                return
 
         messages = body.get("messages", [])
         if not messages:
@@ -109,15 +144,15 @@ class Pipe:
         try:
             if self.valves.stream:
                 # Streaming response
-                async for chunk in self.stream_openai_response(processed_messages):
+                async for chunk in self.stream_litellm_response(processed_messages):
                     yield chunk
             else:
                 # Non-streaming response
-                response = await self.get_openai_response(processed_messages)
+                response = await self.get_litellm_response(processed_messages)
                 yield response
 
         except Exception as e:
-            logger.error(f"Error in OpenAI API call: {e}")
+            logger.error(f"Error in LiteLLM API call: {e}")
             yield f"❌ Error: {str(e)}"
 
     async def process_messages(
@@ -230,11 +265,7 @@ class Pipe:
             # Handle different file types
             if file_type and file_type.startswith("image/"):
                 # Image file - convert to base64 for vision models
-                if (
-                    self.valves.vision_enabled
-                    and "vision" in self.valves.openai_model
-                    or "gpt-4o" in self.valves.openai_model
-                ):
+                if self.valves.vision_enabled and self.supports_vision():
                     base64_data = file_data.get("data")
                     if not base64_data and file_path:
                         # Read file if path is provided
@@ -280,10 +311,7 @@ class Pipe:
                 return {"type": "text", "text": "[Image upload - vision disabled]"}
 
             # Check if model supports vision
-            if not (
-                "vision" in self.valves.openai_model
-                or "gpt-4o" in self.valves.openai_model
-            ):
+            if not self.supports_vision():
                 return {
                     "type": "text",
                     "text": "[Image upload - model doesn't support vision]",
@@ -307,13 +335,26 @@ class Pipe:
             logger.error(f"Error processing image: {e}")
             return {"type": "text", "text": f"[Error processing image: {str(e)}]"}
 
-    async def stream_openai_response(
+    def supports_vision(self) -> bool:
+        """Check if the current model supports vision"""
+        model = self.valves.litellm_model.lower()
+        vision_models = [
+            "gpt-4o",
+            "gpt-4-vision",
+            "gpt-4-turbo",
+            "claude-3",
+            "gemini-pro-vision",
+            "gemini-1.5",
+        ]
+        return any(vm in model for vm in vision_models)
+
+    async def stream_litellm_response(
         self, messages: List[Dict]
     ) -> AsyncGenerator[str, None]:
-        """Stream response from OpenAI API"""
+        """Stream response from LiteLLM proxy using OpenAI client"""
         try:
-            stream = await self.openai_client.chat.completions.create(
-                model=self.valves.openai_model,
+            stream = await self.litellm_client.chat.completions.create(
+                model=self.valves.litellm_model,
                 messages=messages,
                 temperature=self.valves.temperature,
                 max_tokens=self.valves.max_tokens,
@@ -330,18 +371,18 @@ class Pipe:
             logger.error(f"Streaming error: {e}")
             yield f"❌ Streaming error: {str(e)}"
 
-    async def get_openai_response(self, messages: List[Dict]) -> str:
-        """Get non-streaming response from OpenAI API"""
+    async def get_litellm_response(self, messages: List[Dict]) -> str:
+        """Get non-streaming response from LiteLLM proxy using OpenAI client"""
         try:
             response = await asyncio.wait_for(
-                self.openai_client.chat.completions.create(
-                    model=self.valves.openai_model,
+                self.litellm_client.chat.completions.create(
+                    model=self.valves.litellm_model,
                     messages=messages,
                     temperature=self.valves.temperature,
                     max_tokens=self.valves.max_tokens,
                     stream=False,
                 ),
-                timeout=60.0,
+                timeout=float(self.valves.timeout),
             )
 
             return response.choices[0].message.content
@@ -354,7 +395,7 @@ class Pipe:
 
 
 async def main():
-    """Test the OpenAI function with example inputs"""
+    """Test the LiteLLM function with example inputs"""
 
     # Example messages
     example_messages = [
@@ -365,39 +406,24 @@ async def main():
         },
     ]
 
-    # Example with file upload simulation
-    # example_with_file = [
-    #     {
-    #         "role": "user",
-    #         "content": {
-    #             "text": "What's in this image?",
-    #             "images": [
-    #                 {"data": "base64_encoded_image_data_here", "type": "image/jpeg"}
-    #             ],
-    #         },
-    #     }
-    # ]
-
     # Example body
     example_body = {"messages": example_messages}
 
-    print("🤖 OpenAI Streaming Function Test")
+    print("🤖 LiteLLM Streaming Function Test")
     print("=" * 50)
 
     # Initialize the Pipe
     pipe_instance = Pipe()
 
-    # Set up API key for testing (you would normally configure this in valves)
-    pipe_instance.valves.openai_api_key = os.getenv("OPENAI_API_KEY", "")
+    # Set up API key and base URL for testing
+    pipe_instance.valves.litellm_api_key = os.getenv("LITELLM_API_KEY", "password")
+    pipe_instance.valves.litellm_api_base = os.getenv(
+        "LITELLM_API_BASE", "http://localhost:8080"
+    )
+    pipe_instance.valves.litellm_model = "gemma"
 
     # Call startup
     await pipe_instance.on_startup()
-
-    if not pipe_instance.openai_client:
-        print(
-            "⚠️  OpenAI client not initialized. Please set OPENAI_API_KEY environment variable."
-        )
-        return
 
     print("Testing streaming response...")
     print("-" * 50)
@@ -428,5 +454,5 @@ async def main():
 
 if __name__ == "__main__":
     """Entry point for testing"""
-    print("Starting OpenAI Function Test...")
+    print("Starting LiteLLM Function Test...")
     asyncio.run(main())

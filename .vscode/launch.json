@@ -23,10 +23,12 @@
 			"request": "launch",
 			"name": "[Debug] Backend Function",
 			"cwd": "${workspaceFolder}/backend",
+			"preLaunchTask": "venv_activate",
 			"python": "${workspaceFolder}/.venv/bin/python3.11",
 			"program": "${workspaceFolder}/backend/functions/${input:target}",
 			"args": [],
 			"env": {
+				"PATH": "${workspaceFolder}/.venv/bin:${env:PATH}",
 				"PYTHONPATH": "${workspaceFolder}/backend:${env:PYTHONPATH}"
 			},
 			"envFile": "${workspaceFolder}/.env"
@@ -34,23 +36,27 @@
 		{
 			"type": "debugpy",
 			"request": "launch",
-			"name": "[Debug] Backend",
-			"cwd": "${workspaceFolder}/backend",
-			"python": "${workspaceFolder}/.venv/bin/python3.11",
+			"name": "[Launch] Backend",
+			"preLaunchTask": "venv_activate",
+			"cwd": "${workspaceFolder}",
+			"python": "${workspaceFolder}/.venv/bin/python",
 			"module": "uvicorn",
-			"args": ["open_webui.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"],
+			"args": ["open_webui.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
 			"env": {
-				"PYTHONPATH": "${workspaceFolder}/backend:${env:PYTHONPATH}"
+				"PATH": "${workspaceFolder}/.venv/bin:${env:PATH}",
+				"PYTHONPATH": "${workspaceFolder}:${env:PYTHONPATH}"
 			},
-			"envFile": "${workspaceFolder}/.env"
+			"envFile": "${workspaceFolder}/.env",
+			"console": "integratedTerminal",
+			"justMyCode": true
 		},
 		{
-			"type": "node",
+			"type": "node-terminal",
 			"request": "launch",
 			"name": "[Launch] Frontend",
+			"preLaunchTask": "nvm_use",
 			"cwd": "${workspaceFolder}",
-			"program": "${env:HOME}/.nvm/versions/node/v22.18.0/bin/npm",
-			"args": ["run", "dev"],
+			"command": "npm run dev",
 			"env": {
 				"NODE_ENV": "development"
 			},

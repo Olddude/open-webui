@@ -6,22 +6,15 @@ Tests the Ollama agent with websocket streaming, task monitoring, and tool usage
 
 import pytest
 import asyncio
-import os
-from unittest.mock import patch, AsyncMock, MagicMock, Mock
-import sys
+from unittest.mock import patch, AsyncMock, Mock
 
-# Add the functions directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "functions"))
-
-# Import the function under test
-from functions.ollama_agent_function import (
+from backend.functions.ollama_agent_function import (
     Pipe,
     TaskMonitor,
     AgentMemory,
     ToolExecutor,
     TaskStatus,
     ToolType,
-    main,
 )
 
 

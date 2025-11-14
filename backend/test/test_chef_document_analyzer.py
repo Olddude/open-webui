@@ -5,15 +5,12 @@ Tests the chef document analyzer function with stdout assertions.
 """
 
 import pytest
-import json
-import re
 import subprocess
 import sys
 import os
 from unittest.mock import patch, AsyncMock
 
-# Import the function under test from the functions directory
-from functions.chef_document_analyzer import main
+from backend.functions.chef_document_analyzer import main
 
 
 class TestChefDocumentAnalyzer:

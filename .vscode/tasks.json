@@ -1,4 +1,25 @@
 {
 	"version": "2.0.0",
-	"tasks": []
+	"tasks": [
+		{
+			"label": "venv_activate",
+			"type": "shell",
+			"command": "source .venv/bin/activate",
+			"args": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "nvm_use",
+			"type": "shell",
+			"command": "source ~/.nvm/nvm.sh && nvm use",
+			"args": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
+		}
+	]
 }
