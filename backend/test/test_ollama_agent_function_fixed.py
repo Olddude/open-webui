@@ -375,13 +375,13 @@ class TestOllamaAgentFunction:
     @pytest.mark.asyncio
     async def test_error_handling_ollama_error(self, pipe_instance, sample_body):
         """Test error handling for Ollama API errors"""
-        # Mock aiohttp session to return error
-        mock_session = AsyncMock()
+        # Mock aiohttp session to return error - use Mock not AsyncMock
+        mock_session = Mock()
         pipe_instance.session = mock_session
 
         mock_response = AsyncMock()
         mock_response.status = 500
-        mock_response.text.return_value = "Internal Server Error"
+        mock_response.text = AsyncMock(return_value="Internal Server Error")
 
         # Create proper async context manager
         mock_ctx_mgr = AsyncContextManagerMock(mock_response)
@@ -400,13 +400,15 @@ class TestOllamaAgentFunction:
         """Test non-streaming response"""
         pipe_instance.valves.stream = False
 
-        # Mock aiohttp session
-        mock_session = AsyncMock()
+        # Mock aiohttp session - use Mock not AsyncMock
+        mock_session = Mock()
         pipe_instance.session = mock_session
 
         mock_response = AsyncMock()
         mock_response.status = 200
-        mock_response.json.return_value = {"message": {"content": "Complete response"}}
+        mock_response.json = AsyncMock(
+            return_value={"message": {"content": "Complete response"}}
+        )
 
         # Use proper async context manager
         mock_ctx_mgr = AsyncContextManagerMock(mock_response)
@@ -434,11 +436,19 @@ class TestOllamaAgentFunction:
     @pytest.mark.asyncio
     async def test_timeout_handling(self, pipe_instance):
         """Test timeout handling"""
-        mock_session = AsyncMock()
+        # Use Mock not AsyncMock
+        mock_session = Mock()
         pipe_instance.session = mock_session
 
-        # Simulate timeout
-        mock_session.post.side_effect = asyncio.TimeoutError()
+        # Simulate timeout by making the context manager raise TimeoutError on enter
+        async def raise_timeout():
+            raise asyncio.TimeoutError()
+
+        mock_ctx_mgr = Mock()
+        mock_ctx_mgr.__aenter__ = raise_timeout
+        mock_ctx_mgr.__aexit__ = AsyncMock()
+
+        mock_session.post.return_value = mock_ctx_mgr
 
         response = await pipe_instance._get_ollama_response([])
 

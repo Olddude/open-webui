@@ -52,7 +52,7 @@ class TestChefDocumentAnalyzer:
         ), "Missing chef analysis header"
 
         # Test 3: Document processing confirmation
-        assert "Files processed: 2" in stdout_content, "Should process 2 test files"
+        assert "Files processed:** 2" in stdout_content, "Should process 2 test files"
         assert "sample_recipe.txt" in stdout_content, "Should mention recipe file"
         assert "nutrition_info.json" in stdout_content, "Should mention nutrition file"
 
@@ -174,11 +174,11 @@ class TestChefDocumentAnalyzer:
 
         # Test structured sections
         sections = [
-            "Documents Overview:",
-            "Culinary Content Detection:",
-            "Files Analyzed:",
-            "Chef's Mock Insights:",
-            "Chef's Recommendations:",
+            "Documents Overview",
+            "Culinary Content Detection",
+            "Files Analyzed",
+            "Chef's Mock Insights",
+            "Chef's Recommendations",
         ]
 
         for section in sections:
@@ -202,7 +202,7 @@ class TestChefDocumentAnalyzer:
 
         # Test that it detected content from the sample files
         content_analysis = [
-            "Files processed: 2",  # Should process both test files
+            "Files processed:** 2",  # Should process both test files
             "Recipe-related content:",  # Should find recipe keywords
             "Nutrition information:",  # Should find nutrition keywords
             "sample_recipe.txt",  # Should list the recipe file

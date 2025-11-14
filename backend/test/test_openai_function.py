@@ -52,7 +52,7 @@ class TestOpenAIFunction:
         pipe = Pipe()
         pipe.valves.openai_api_key = "test_api_key"
 
-        with patch("openai_function.AsyncOpenAI") as mock_openai:
+        with patch("functions.openai_function.AsyncOpenAI") as mock_openai:
             mock_client = AsyncMock()
             mock_openai.return_value = mock_client
 
