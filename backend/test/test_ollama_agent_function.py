@@ -441,7 +441,7 @@ class TestOllamaAgentFunction:
         pipe_instance.session = mock_session
 
         # Simulate timeout by making the context manager raise TimeoutError on enter
-        async def raise_timeout():
+        async def raise_timeout(self):
             raise asyncio.TimeoutError()
 
         mock_ctx_mgr = Mock()

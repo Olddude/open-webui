@@ -52,16 +52,18 @@ class TestOpenAIFunction:
         pipe = Pipe()
         pipe.valves.openai_api_key = "test_api_key"
 
-        with patch("functions.openai_function.AsyncOpenAI") as mock_openai:
-            mock_client = AsyncMock()
-            mock_openai.return_value = mock_client
+        # Clear environment to prevent using real API key
+        with patch.dict(os.environ, {"OPENAI_API_KEY": ""}, clear=True):
+            with patch("functions.openai_function.AsyncOpenAI") as mock_openai:
+                mock_client = AsyncMock()
+                mock_openai.return_value = mock_client
 
-            await pipe.on_startup()
+                await pipe.on_startup()
 
-            assert pipe.openai_client is not None
-            mock_openai.assert_called_once_with(
-                api_key="test_api_key", base_url="https://api.openai.com/v1"
-            )
+                assert pipe.openai_client is not None
+                mock_openai.assert_called_once_with(
+                    api_key="test_api_key", base_url="https://api.openai.com/v1"
+                )
 
     @pytest.mark.asyncio
     async def test_on_startup_without_api_key(self, capsys):
